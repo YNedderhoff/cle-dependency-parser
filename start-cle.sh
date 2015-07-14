@@ -5,4 +5,3 @@ python -u cle.py -i ../dependency-parsing-files/data/english/train/wsj_train.fir
 
 #echo 'Lenght of diff input output:'
 #diff ../dependency-parsing-files/data/english/train/wsj_train.first-5k.conll06 out.txt | wc -l
-
