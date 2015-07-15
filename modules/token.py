@@ -4,7 +4,10 @@ class Token(object):
     (a non-empty line in CoNLL09 format).
     """
     def __init__(self, line):
+
         entries = line.split('\t')
+        if len(entries) != 10:
+            print "Length not right."
         self.id = entries[0]
         self.form = entries[1]
         self.lemma = entries[2]
