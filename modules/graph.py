@@ -1,4 +1,3 @@
-import codecs
 from copy import deepcopy
 
 from token import sentences, Token
@@ -28,30 +27,12 @@ class DepTree:
                 if token2.head == token1.id:
                     self.nodes[tid+1].add_edge(token2)
 
-
-class TrainingInstance:
-    def __init__(self, t, feat_map):
+class Instance:
+    def __init__(self, sentence, feat_map):
         # An instance object is a graph, represented as a dictionary.
         # This example {node1:{node2:[s, f]}} is a graph with two nodes
         # and one arc from node1 to node 2, with the score s and the feature vector f.
-
-        self.graph = {}
-
-        for node_id in t.nodes.keys():
-            if t.nodes[node_id].edges:
-                current_token = t.nodes[node_id].nodeToken
-                current_token_key = str(current_token.id)+"_"+current_token.form
-                self.graph[current_token_key] = {}
-                for e in t.nodes[node_id].edges:
-                    f = arc_feature_vector(t.nodes[node_id].nodeToken, e, feat_map)
-                    self.graph[current_token_key][str(e.id)+"_"+e.form] = [0.0, f]
-
-class TestingInstance:
-    def __init__(self, t, feat_map):
-        # An instance object is a graph, represented as a dictionary.
-        # This example {node1:{node2:[s, f]}} is a graph with two nodes
-        # and one arc from node1 to node 2, with the score s and the feature vector f.
-
+        t = DepTree(sentence)
         self.graph = {}
         self.dep_tree = t
 
@@ -74,46 +55,74 @@ def arc_feature_vector(h, d, feat_map):
     if "hform,dpos:" + h.form + "," + d.pos in feat_map: feat_vec[feat_map["hform,dpos:" + h.form + "," + d.pos]] = 1
     if "hpos,dform:" + h.pos + "," + d.form in feat_map: feat_vec[feat_map["hpos,dform:" + h.pos + "," + d.form]] = 1
 
-    """
-        feat_map["hform:" + h.form]: 1,
-        feat_map["hpos:" + h.pos]: 1,
-        feat_map["dform:" + d.form]: 1,
-        feat_map["dpos:" + d.pos]: 1,
-        feat_map["hform,dpos:" + h.form + "," + d.pos]: 1,
-        feat_map["hpos,dform:" + h.pos + "," + d.form]: 1
-        }
-    """
-
     return feat_vec
 
-def complete_directed_graph(ins):
+def complete_directed_graph(instance, feat_map):
     # converts directed Graph into a complete directed Graph, which means every node is connected to every other node,
     # except no node is connected to itself and root.
     # The new arcs, which are not in the in-tree tree, have the score 0.0 and a feature vector consisting of zeroes.
-
+    graph = instance.graph
+    dep_tree = instance.dep_tree
     a = {}
     complete_node_list = set()
-    for head in ins:
+    for head in graph:
         complete_node_list.add(head)
-        for dependent in ins[head]:
+        for dependent in graph[head]:
             complete_node_list.add(dependent)
     if len(complete_node_list) > 2:
         for node in complete_node_list:
             a[node] = {}
             for node2 in complete_node_list:
                 if not (node2 == node or node2 == "0_Root"):
-                    if node in ins.keys():
-                        if node2 in ins[node].keys():
-                            a[node][node2] = ins[node][node2]
-                    else:
-                        a[node][node2] = [0.0, {}]
+
+                    node_pos = dep_tree.nodes[int(node.split("_")[0])].nodeToken.pos
+                    node_form = node.split("_")[1]
+                    node2_pos = dep_tree.nodes[int(node2.split("_")[0])].nodeToken.pos
+                    node2_form = node2.split("_")[1]
+
+                    a[node][node2] = [0.0, {}]
+
+                    features = [
+                        "hform:" + node_form,
+                        "hpos:" + node_pos,
+                        "dform:" + node2_form,
+                        "dpos:" + node2_pos,
+                        "hform,dpos:" + node_form + "," + node2_pos,
+                        "hpos,dform:" + node_pos + "," + node2_form
+
+                    ]
+
+                    for feature in features:
+                        if feature in feat_map:
+                            a[node][node2][1][feat_map[feature]] = 1
+
     elif len(complete_node_list) == 2:
         for node in complete_node_list:
             if node == "0_Root":
                 a[node] = {}
                 for node2 in complete_node_list:
                     if not node2 == "0_Root":
-                        a[node][node2] = ins[node][node2]
+
+                        node_pos = dep_tree.nodes[int(node.split("_")[0])].nodeToken.pos
+                        node_form = node.split("_")[1]
+                        node2_pos = dep_tree.nodes[int(node2.split("_")[0])].nodeToken.pos
+                        node2_form = node2.split("_")[1]
+
+                        a[node][node2] = [0.0, {}]
+
+                        features = [
+                            "hform:" + node_form,
+                            "hpos:" + node_pos,
+                            "dform:" + node2_form,
+                            "dpos:" + node2_pos,
+                            "hform,dpos:" + node_form + "," + node2_pos,
+                            "hpos,dform:" + node_pos + "," + node2_form
+
+                        ]
+
+                        for feature in features:
+                            if feature in feat_map:
+                                a[node][node2][1][feat_map[feature]] = 1
     else:
         print "Error: Not enough nodes."
 
@@ -182,32 +191,6 @@ def highest_incoming_heads(graph):
         else:
             graph2[d[dependent][0]] = {dependent: d[dependent][1]}
     return graph2
-
-def create_training_instances(infile, featmap):
-    # creates a dictionary with numbers as keys and Instances in the Format (sentence, Instance object)
-    # as values
-    ins = {}
-    s_count = 0
-    for sentence in sentences(codecs.open(infile, encoding='utf-8')):
-        s = ""
-        for token in sentence:
-            s += token.form+" "
-        ins[s_count] = [s.rstrip(), TrainingInstance(DepTree(sentence), featmap)]
-        s_count += 1
-    return ins
-
-def create_testing_instances(infile, featmap):
-    # creates a dictionary with numbers as keys and Instances in the Format (sentence, Instance object)
-    # as values
-    ins = {}
-    s_count = 0
-    for sentence in sentences(codecs.open(infile, encoding='utf-8')):
-        s = ""
-        for token in sentence:
-            s += token.form+" "
-        ins[s_count] = [s.rstrip(), TestingInstance(DepTree(sentence), featmap)]
-        s_count += 1
-    return ins
 
 def graph_sanity_check(graph):
     sane = True

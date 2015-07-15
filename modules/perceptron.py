@@ -1,19 +1,18 @@
-import sys
 import codecs
 from copy import deepcopy
 
-from graph import complete_directed_graph, graph_sanity_check, DepTree
+from graph import complete_directed_graph, graph_sanity_check, Instance
 from cle import chu_liu_edmonds
 from token import sentences
 
 def score_arcs(graph, w):  # f= feature vector, w = weight vector
     g = deepcopy(graph)
     # the score function for Arcs, the dot product of weight vector and feature vector
-    score = 0
     for head in g:
         for dependent in g[head]:
+            score = 0
             for dimension in g[head][dependent][1]:
-                score = dimension * w[dimension]
+                score += dimension * w[dimension]
             g[head][dependent][0] = score
     return g
 
@@ -27,33 +26,32 @@ def sum_of_arc_feature_vectors(graph, l):
                 sum_of_feat_vecs[feature] += 1
     return sum_of_feat_vecs
 
-def structured_perceptron(arguments, ins, weight_vector):  # training
-    # w[-1]=[3.57]
-    # print np.vdot(v, w)
+def structured_perceptron(arguments, feat_map, weight_vector):  # training
     w = deepcopy(weight_vector)
     e = int(arguments.epochs)
     if arguments.train:
-        print >> sys.stderr, "Start training ..."
         for epoch in range(1, e + 1):
-            print >> sys.stderr, "\tEpoch: " + str(epoch)
-            print >> sys.stderr, "\t\tCurrent weight vector:"
-            print >> sys.stderr, "\t\t\t" + str(w)
+            print "\t\tEpoch: " + str(epoch)
             total = 0
             correct = 0
             instances = 0
-            for instance in ins.keys():
-                instances += 1
-                y_gold = ins[instance][1].graph  # the correct tree
-                if not graph_sanity_check(y_gold): print "Gold"
+            for sentence in sentences(codecs.open(arguments.in_file, encoding='utf-8')):
 
-                g = complete_directed_graph(ins[instance][1].graph)  # the complete directed graph
-                if not graph_sanity_check(g): print "Complete"
+                instance = Instance(sentence, feat_map)
+
+                instances += 1
+                
+                y_gold = instance.graph  # the correct tree
+                if not graph_sanity_check(y_gold): print "Error occurred in gold tree, perceptron"
+
+                g = complete_directed_graph(instance, feat_map)  # the complete directed graph
+                if not graph_sanity_check(g): print "Error occurred in complete tree, perceptron"
 
                 g_scored = score_arcs(g, w)
-                if not graph_sanity_check(g_scored): print "Scored Complete"
+                if not graph_sanity_check(g_scored): print "Error occurred in scored complete tree, perceptron"
 
                 y_predicted = chu_liu_edmonds(g_scored)
-                if not graph_sanity_check(y_predicted): print "Predicted"
+                if not graph_sanity_check(y_predicted): print "Error occurred in predicted tree, perceptron"
 
                 # print y_gold
                 # print y_predicted
@@ -72,33 +70,40 @@ def structured_perceptron(arguments, ins, weight_vector):  # training
                     for i in range(len(w)):
                         w_new.append(w[i] + tmp4[i])
 
+                    if len(w_new) != len(w):
+                        print "The new weight vector has not the same length as the old one."
+
                     w = w_new
 
                 else:
                     correct += 1
                 total += 1
                 if total % 500 == 0:
-                    print >> sys.stderr, "\t\tInstance Nr. " + str(total)
-            print total, correct
+                    print "\t\t\tInstance Nr. " + str(total)
+            print "\t\tTrained on " + str(total) + " sentences, with " + str(correct) + "classified correctly."
+            print "Current weight vector:"
+            print w
         return w
 
     elif arguments.test:
 
-        # output = open(arguments.out_file, "w")
-        # output.close()
+        output = open(arguments.out_file, "w")
+        output.close()
 
-        print >> sys.stderr, "Running in test mode\n"
         total = 0
-        for instance in ins.keys():
 
-            g = complete_directed_graph(ins[instance][1].graph)  # the complete directed graph
-            if not graph_sanity_check(g): print "Complete"
+        for sentence in sentences(codecs.open(arguments.in_file, encoding='utf-8')):
+
+            instance = Instance(sentence, feat_map)
+
+            g = complete_directed_graph(instance, feat_map)  # the complete directed graph
+            if not graph_sanity_check(g): print "Error occurred in complete tree, perceptron"
 
             g_scored = score_arcs(g, w)
-            if not graph_sanity_check(g_scored): print "Scored Complete"
+            if not graph_sanity_check(g_scored): print "Error occurred in scored complete tree, perceptron"
 
             y_predicted = chu_liu_edmonds(g_scored)
-            if not graph_sanity_check(y_predicted): print "Predicted"
+            if not graph_sanity_check(y_predicted): print "Error occurred in predicted tree, perceptron"
 
             node_list = set()
 
@@ -112,7 +117,7 @@ def structured_perceptron(arguments, ins, weight_vector):  # training
                     for dependent in y_predicted[head]:
                         if dependent == element:
                             output = open(arguments.out_file, "a")
-                            print >> output, dependent.split("_")[0]+"\t"+ dependent.split("_")[1]+"\t"+ins[instance][1].dep_tree.nodes[int(dependent.split("_")[0])].nodeToken.lemma+"\t"+ins[instance][1].dep_tree.nodes[int(dependent.split("_")[0])].nodeToken.pos+"\t_\t_\t"+head.split("_")[0]+"\t"+"_"+"\t_\t_"
+                            print >> output, dependent.split("_")[0]+"\t"+ dependent.split("_")[1]+"\t"+instance.dep_tree.nodes[int(dependent.split("_")[0])].nodeToken.lemma+"\t"+instance.dep_tree.nodes[int(dependent.split("_")[0])].nodeToken.pos+"\t_\t_\t"+head.split("_")[0]+"\t"+"_"+"\t_\t_"
                             output.close()
             output = open(arguments.out_file, "a")
             print >> output, ""
@@ -120,8 +125,8 @@ def structured_perceptron(arguments, ins, weight_vector):  # training
 
             total += 1
             if total % 500 == 0:
-                print >> sys.stderr, "\t\tInstance Nr. " + str(total)
-        print total
+                print "\t\t\tInstance Nr. " + str(total)
+        print "\t\t" + str(total) + " sentences annotated."
 
     else:
         print "This should not happen."

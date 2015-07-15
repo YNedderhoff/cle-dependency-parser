@@ -16,10 +16,10 @@ def chu_liu_edmonds(in_g):  # incomplete
         print "Cycle found."
         c = give_cycle(g_a, "0_Root", [], [])
         g_c = contract(g_a, c)
-        if not graph_sanity_check(g_c): print "Contracted (in cle)"
+        if not graph_sanity_check(g_c): print "Error occurred in contracted tree, in CLE"
 
         y = chu_liu_edmonds(g_c)
-        if not graph_sanity_check(y): print "y in cle"
+        if not graph_sanity_check(y): print "Error occurred in recursive cle-tree, in CLE"
 
         # find arc to remove
         to_remove_head = ""
@@ -56,7 +56,7 @@ def contract(g_a_in, c):  # incomplete
     g_a = deepcopy(g_a_in)
     # remove Cycle
     g_c = remove_cycle(g_a, c)
-    if not graph_sanity_check(g_c): print "Contracted (in contract function)"
+    if not graph_sanity_check(g_c): print "Error occurred in contracted tree, in contract function"
     # check if exactly to arcs have been removed
     counter = 0
     for key in g_a:

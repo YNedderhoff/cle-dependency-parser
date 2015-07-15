@@ -1,20 +1,18 @@
 # !/bin/python
 #  -*- coding: utf-8 -*-
 
-import sys
 import time
 import os
 
 import cPickle
 import gzip
 
-from modules.graph import give_cycle, remove_cycle, create_training_instances, create_testing_instances, \
-    graph_sanity_check
 from modules.perceptron import structured_perceptron
 from modules.featmap import fm
 
 
 def create_weight_vector(l):
+    # returns a list of length len(l) filled with 0.0
     w = []
     for i in range(l):
         w.append(0.0)
@@ -37,43 +35,37 @@ def save(file_name, model):
 
 
 def train(args):
-    # outstream = open(args.outputfile, 'w')
+
+    start = time.time()
+    print "\tCreating feature map..."
 
     # feat map is a dictionary with every existing feature in the training data as keys,
     # and unique indexes as values. Example: u'hpos,dform:VBD,way': 3781
-
-    start = time.time()
-    print >> sys.stderr, "Creating feature map..."
-
     feat_map = fm(args.in_file)
 
     stop = time.time()
-    print >> sys.stderr, "\tNumber of features: " + str(len(feat_map))
-    print >> sys.stderr, "\tDone, " + str(stop - start) + " sec"
-
-    # instances is a dictionary, containing a index as a key and a list,
-    # containing a sentence string and a Instance object.
+    print "\t\tNumber of features: " + str(len(feat_map))
+    print "\t\tDone, " + str(stop - start) + " sec"
 
     start = time.time()
-    print >> sys.stderr, "Creating instances..."
+    print "\tRunning the perceptron on '" + args.in_file + "' ..."
 
-    instances = create_training_instances(args.in_file, feat_map)
+    w = structured_perceptron(arguments, feat_map, create_weight_vector(len(feat_map)))
 
     stop = time.time()
-    print >> sys.stderr, "\tDone, " + str(stop - start) + " sec"
+    print "\t\tDone, " + str(stop - start) + " sec"
 
-    w = structured_perceptron(arguments, instances, create_weight_vector(len(feat_map)))
+    start = time.time()
+    print "\tSaving the model and the features to file '" +str(args.model) + "'..."
 
     save(args.model, [feat_map, w])
 
-    # print np.vdot(w, a)
-    # outstream.close()
-
+    stop = time.time()
+    print "\t\tDone, " + str(stop - start) + " sec"
 
 def test(args):
     # load classifier vectors (model) and feature vector from file:
-    z0 = time.time()
-    print "\tLoading the model and the features"
+    print "\tLoading the model and the features from file '" + str(args.model) + "'"
     start = time.time()
 
     model_list = load(args.model)
@@ -81,75 +73,20 @@ def test(args):
     w = model_list[1]
 
     stop = time.time()
-    print "\t" + str(len(feat_map)) + " features loaded"
-    print "\t\t" + str(stop - start) + " sec."
+    print "\t\t" + str(len(feat_map)) + " features loaded"
+    print "\t\tDone, " + str(stop - start) + " sec."
 
     start = time.time()
-    print >> sys.stderr, "Creating instances..."
+    print "\tAnnotate file '" + args.in_file + "'..."
 
-    instances = create_testing_instances(args.in_file, feat_map)
-
-    stop = time.time()
-    print >> sys.stderr, "\tDone, " + str(stop - start) + " sec"
-
-    start = time.time()
-    print "\tTest file: " + args.in_file
-
-    structured_perceptron(args, instances, w)
+    structured_perceptron(args, feat_map, w)
 
     stop = time.time()
-    print >> sys.stderr, "\tDone, " + str(stop - start) + " sec"
-
-    z1 = time.time()
-    print "\t\t" + str(z1 - z0) + " sec."
-
+    print "\t\tDone, " + str(stop - start) + " sec"
 
 def write_to_file(token, file_obj):
     print >> file_obj, str(token.id) + "\t" + str(token.form) + "\t" + str(token.lemma) + "\t" + str(
         token.pos) + "\t" + "_" + "\t" + "_" + "\t" + str(token.head) + "\t" + str(token.rel) + "\t" + "_" + "\t" + "_"
-
-
-def run_tests():
-    # test graph beinhaltet einen cycle
-    test_graph = {
-        "0_Root": {
-            "1_was": "x",
-            "5_has": "y"
-        },
-        "1_was": {
-            "2_is": "x",
-            "6_bidde": "y"
-        },
-        "2_is": {
-            "3_los": "x",
-            "6_bidde": "y"
-        },
-        "3_los": {
-            "3_was": "x",
-            "1_is": "y",
-            "4_ahja": "rofl"
-        },
-        "4_ahja": {
-            "1_was": "x"
-        }
-    }
-
-    if graph_sanity_check(test_graph):
-        print "Graph passed sanity check."
-    c = give_cycle(test_graph, "0_Root", [], [])
-    print c
-    new = remove_cycle(test_graph, c)
-    print test_graph
-    print new
-
-    """
-    a = complete_directed_graph(test_graph)
-    c = give_cycle(a, "0_Root", [], [])
-    print c
-    b = highest_incoming_heads(score_arcs(a))
-    c = give_cycle(b, "0_Root", [], [])
-    print c
-    """
 
 
 if __name__ == '__main__':
