@@ -3,13 +3,16 @@
 
 import time
 import os
+import codecs
 
 import cPickle
 import gzip
 
 from modules.perceptron import structured_perceptron
-from modules.featmap import fm
-
+from modules.token import sentences
+from modules.featmap import fm, add_feat_vec, reverse_feat_map
+from modules.scoring import score
+from modules.graphs import DepTree, FullGraph, SparseGraph
 
 def create_weight_vector(l):
     # returns a list of length len(l) filled with 0.0
@@ -42,19 +45,79 @@ def train(args):
     # feat map is a dictionary with every existing feature in the training data as keys,
     # and unique indexes as values. Example: u'hpos,dform:VBD,way': 3781
     feat_map = fm(args.in_file)
+    rev_feat_map = reverse_feat_map(feat_map)
+    stop = time.time()
+    print "\t\tNumber of features: " + str(len(feat_map))
+    print "\t\tDone, " + str(stop - start) + " sec"
+
+    start = time.time()
+    print "\tCreating weight vector..."
+
+    weight_vector = create_weight_vector(len(feat_map))
 
     stop = time.time()
     print "\t\tNumber of features: " + str(len(feat_map))
     print "\t\tDone, " + str(stop - start) + " sec"
 
     start = time.time()
-    print "\tRunning the perceptron on '" + args.in_file + "' ..."
+    print "\tCreating sparse representation of every sentence..."
 
-    w = structured_perceptron(arguments, feat_map, create_weight_vector(len(feat_map)))
+    sparse_graphs = {}
 
+    for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
+
+        dep_tree = DepTree(sentence).nodes
+        full_graph = FullGraph(dep_tree).heads
+        sparse_graph = SparseGraph(dep_tree).heads
+
+        # Check if full_graph and sparse_graph ids match at every point
+        for full_head in full_graph:
+            for full_arc in full_graph[full_head]:
+                counter = 0
+                for sparse_arc in sparse_graph[full_head]:
+                    if full_arc.dependent == sparse_arc.dependent:
+                        counter += 1
+                if counter != 1:
+                    print "Error: The full and sparse graph representations do not match."
+
+        # add feature vec to every graph
+        sparse_graph = add_feat_vec(full_graph, sparse_graph, feat_map)
+
+        # check if every feature vector is filled with the correct number of features.
+
+        for head in sparse_graph:
+            for arc in sparse_graph[head]:
+                if not arc.feat_vec:
+                    print "Error: Feature vector is empty."
+                elif len(arc.feat_vec) != 6 and arc.head != 0:
+                    print "Length of arc feature vector is wrong."
+                    print arc.feat_vec
+                elif len(arc.feat_vec) != 2 and arc.head == 0:
+                    print "Length of arc feature vector is wrong (__ROOT__ arc)."
+                    print arc.feat_vec
+
+        sparse_graphs[len(sparse_graphs)] = sparse_graph
+    stop = time.time()
+    print "\t\tNumber of sentences: " + str(len(sparse_graphs))
+    print "\t\tDone, " + str(stop - start) + " sec"
+
+    start = time.time()
+    print "\tStart training..."
+
+    for epoch in range(1, int(args.epochs) + 1):
+        print "\t\tEpoch: " + str(epoch)
+        total = 0
+        correct = 0
+
+        for graph_id in sparse_graphs:
+            weight_vector = structured_perceptron(sparse_graphs[graph_id], feat_map, rev_feat_map, weight_vector, "train")
+            total += 1
+            if total % 500 == 0:
+                print "\t\t\tInstance Nr. " + str(total)
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
 
+    """
     start = time.time()
     print "\tSaving the model and the features to file '" +str(args.model) + "'..."
 
@@ -62,8 +125,10 @@ def train(args):
 
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
+    """
 
 def test(args):
+    """
     # load classifier vectors (model) and feature vector from file:
     print "\tLoading the model and the features from file '" + str(args.model) + "'"
     start = time.time()
@@ -83,6 +148,7 @@ def test(args):
 
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
+    """
 
 def write_to_file(token, file_obj):
     print >> file_obj, str(token.id) + "\t" + str(token.form) + "\t" + str(token.lemma) + "\t" + str(
@@ -116,12 +182,14 @@ if __name__ == '__main__':
         if arguments.train:
             print "Running in training mode\n"
             train(arguments)
+            #cle(arguments)
 
         elif arguments.test:
             print "Running in test mode\n"
             test(arguments)
 
         """
+
         elif arguments.evaluate:
             print "Running in evaluation mode\n"
             out_stream = open(arguments.output_file, 'w')
@@ -130,9 +198,54 @@ if __name__ == '__main__':
         elif arguments.tag:
             print "Running in tag mode\n"
             t.tag(arguments.in_file, arguments.model, arguments.output_file)
+
         """
     t1 = time.time()
     print "\n\tDone. Total time: " + str(t1 - t0) + "sec.\n"
+    """
+    test_tree = {
+        "0_Root": {
+            "1_John": [9.0, {}],
+            "2_saw": [10.0, {}],
+            "3_Mary": [9.0, {}]
+        },
+        "1_John": {
+            "2_saw": [20.0, {}],
+            "3_Mary": [11.0, {}]
+        },
+        "2_saw": {
+            "1_John": [30.0, {}],
+            "3_Mary": [30.0, {}]
+        },
+        "3_Mary": {
+            "1_John": [11.0, {}],
+            "2_saw": [0.0, {}]
+        }
+    }
+
+    test_tree2 = {
+        "0_Root": {
+            "1_John": [5.0, {}],
+            "2_saw": [10.0, {}],
+            "3_Mary": [15.0, {}]
+        },
+        "1_John": {
+            "2_saw": [25.0, {}],
+            "3_Mary": [25.0, {}]
+        },
+        "2_saw": {
+            "1_John": [20.0, {}],
+            "3_Mary": [15.0, {}]
+        },
+        "3_Mary": {
+            "1_John": [10.0, {}],
+            "2_saw": [30.0, {}]
+        }
+    }
+    predicted = chu_liu_edmonds(test_tree2)
+    print predicted
+
 
     # run_tests()
     # run(arguments)
+    """

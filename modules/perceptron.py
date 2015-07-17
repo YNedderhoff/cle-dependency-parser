@@ -1,13 +1,15 @@
 import codecs
 from copy import deepcopy
 
-from graph import complete_directed_graph, graph_sanity_check, Instance
-from cle import chu_liu_edmonds
 from token import sentences
 
+from scoring import score
+from graphs import DepTree, FullGraph, SparseGraph, complete_graph
+from cle import chu_liu_edmonds
+
 def score_arcs(graph, w):  # f= feature vector, w = weight vector
+    # the scoring function for arcs, the dot product of weight vector and feature vector
     g = deepcopy(graph)
-    # the score function for Arcs, the dot product of weight vector and feature vector
     for head in g:
         for dependent in g[head]:
             score = 0
@@ -17,6 +19,7 @@ def score_arcs(graph, w):  # f= feature vector, w = weight vector
     return g
 
 def sum_of_arc_feature_vectors(graph, l):
+    # returns the added feature vectors of every arc
     sum_of_feat_vecs = []
     for i in range(l):
         sum_of_feat_vecs.append(0)
@@ -26,66 +29,95 @@ def sum_of_arc_feature_vectors(graph, l):
                 sum_of_feat_vecs[feature] += 1
     return sum_of_feat_vecs
 
-def structured_perceptron(arguments, feat_map, weight_vector):  # training
-    w = deepcopy(weight_vector)
-    e = int(arguments.epochs)
-    if arguments.train:
-        for epoch in range(1, e + 1):
-            print "\t\tEpoch: " + str(epoch)
-            total = 0
-            correct = 0
-            instances = 0
-            for sentence in sentences(codecs.open(arguments.in_file, encoding='utf-8')):
+def structured_perceptron(sparse_graph, feat_map, rev_feat_map, weight_vector, mode):
 
-                instance = Instance(sentence, feat_map)
+    if mode == "train":
 
-                instances += 1
-                
-                y_gold = instance.graph  # the correct tree
-                if not graph_sanity_check(y_gold): print "Error occurred in gold tree, perceptron"
+        y_gold = sparse_graph  # the correct tree
 
-                g = complete_directed_graph(instance, feat_map)  # the complete directed graph
-                if not graph_sanity_check(g): print "Error occurred in complete tree, perceptron"
+        g = complete_graph(sparse_graph, feat_map, rev_feat_map)  # the complete directed graph
+        g_scored = score(g, weight_vector)
 
-                g_scored = score_arcs(g, w)
-                if not graph_sanity_check(g_scored): print "Error occurred in scored complete tree, perceptron"
+        y_predicted = chu_liu_edmonds(g_scored)
+        return weight_vector
+    """
+        counter = 0
+        for head in y_gold:
+            for dependent in y_gold[head]:
+                if y_gold[head][dependent][0] > 0.0:
+                    counter+=1
+        print counter
+        y_scored = score_arcs(y_gold, w) # the scored, complete directed graph
+        if not graph_sanity_check(g_scored): print "Error occurred in scored complete tree, perceptron"
+        counter = 0
+        for head in y_scored:
+            for dependent in y_scored[head]:
+                if y_scored[head][dependent][0] > 0.0:
+                    counter+=1
+        print counter
+        counter = 0
+        for head in g:
+            for dependent in g[head]:
+                if g[head][dependent][0] > 0.0:
+                    counter+=1
+        print counter
+        counter = 0
+        for head in g_scored:
+            for dependent in g_scored[head]:
+                if g_scored[head][dependent][0] > 0.0:
+                    counter+=1
+        print counter
 
-                y_predicted = chu_liu_edmonds(g_scored)
-                if not graph_sanity_check(y_predicted): print "Error occurred in predicted tree, perceptron"
+        y_predicted = chu_liu_edmonds(g_scored) # the predicted graph
+        if not graph_sanity_check(y_predicted): print "Error occurred in predicted tree, perceptron"
+        if give_cycle(y_predicted, "0_Root", [], []): print "Predicted graph contains cycle."
 
-                # print y_gold
-                # print y_predicted
+        counter = 0
+        for head in y_predicted:
+            for dependent in y_predicted[head]:
+                if y_predicted[head][dependent][0] > 0.0:
+                    counter+=1
+        print counter
 
-                if not y_gold == y_predicted:
-                    tmp1 = sum_of_arc_feature_vectors(y_gold, len(w))
-                    tmp2 = sum_of_arc_feature_vectors(y_predicted, len(w))
-                    tmp3 = []
-                    for i in range(len(w)):
-                        tmp3.append(tmp1[i] - tmp2[i])
-                    tmp4 = []
-                    for i in range(len(w)):
-                        tmp4.append(tmp3[i] * 0.5)
 
-                    w_new = []
-                    for i in range(len(w)):
-                        w_new.append(w[i] + tmp4[i])
+        # print y_gold
+        # print y_predicted
 
-                    if len(w_new) != len(w):
-                        print "The new weight vector has not the same length as the old one."
+        if y_gold == y_predicted:
 
-                    w = w_new
+            correct += 1
 
-                else:
-                    correct += 1
-                total += 1
-                if total % 500 == 0:
-                    print "\t\t\tInstance Nr. " + str(total)
-            print "\t\tTrained on " + str(total) + " sentences, with " + str(correct) + "classified correctly."
-            print "Current weight vector:"
-            print w
-        return w
+        else:
 
+            # adjust weights of the weight vector
+
+            # print "Weights are being adjusted ..."
+
+            tmp1 = sum_of_arc_feature_vectors(y_gold, len(w))
+            tmp2 = sum_of_arc_feature_vectors(y_predicted, len(w))
+            tmp3 = []
+            for i in range(len(w)):
+                tmp3.append(tmp1[i] - tmp2[i])
+            tmp4 = []
+            for i in range(len(w)):
+                tmp4.append(tmp3[i] * 0.5)
+
+            w_new = []
+            for i in range(len(w)):
+                w_new.append(w[i] + tmp4[i])
+
+            if len(w_new) != len(w):
+                print "The new weight vector has not the same length as the old one."
+
+            w = w_new
+        """
+
+
+
+"""
     elif arguments.test:
+
+        # the testing
 
         output = open(arguments.out_file, "w")
         output.close()
@@ -99,11 +131,14 @@ def structured_perceptron(arguments, feat_map, weight_vector):  # training
             g = complete_directed_graph(instance, feat_map)  # the complete directed graph
             if not graph_sanity_check(g): print "Error occurred in complete tree, perceptron"
 
-            g_scored = score_arcs(g, w)
+            g_scored = score_arcs(g, w) # the scored, complete directed graph
             if not graph_sanity_check(g_scored): print "Error occurred in scored complete tree, perceptron"
 
-            y_predicted = chu_liu_edmonds(g_scored)
+            y_predicted = chu_liu_edmonds(g_scored) # the predicted graph
             if not graph_sanity_check(y_predicted): print "Error occurred in predicted tree, perceptron"
+            if give_cycle(y_predicted, "0_Root", [], []): print "Predicted graph contains cycle."
+
+            # write predicted graph to the output file
 
             node_list = set()
 
@@ -131,7 +166,7 @@ def structured_perceptron(arguments, feat_map, weight_vector):  # training
     else:
         print "This should not happen."
 
-        """
+
     elif arguments.evaluate:
         print "Running in evaluation mode\n"
         out_stream = open(arguments.output_file, 'w')
@@ -140,4 +175,5 @@ def structured_perceptron(arguments, feat_map, weight_vector):  # training
     elif arguments.tag:
         print "Running in tag mode\n"
         t.tag(arguments.in_file, arguments.model, arguments.output_file)
+
     """

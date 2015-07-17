@@ -1,8 +1,13 @@
 #!/bin/bash
 
-python -u dependency-parser.py -train -i ../dependency-parsing-files/data/english/train/wsj_train.conll06 -m model -e 10
+#train (on small set)
+python -u dependency-parser.py -train -i ../dependency-parsing-files/data/english/train/wsj_train.first-5k.conll06 -m model -e 1
 
-python -u dependency-parser.py -test -i ../dependency-parsing-files/data/english/dev/wsj_dev.conll06 -m model -o predicted.col
+#train
+#python -u dependency-parser.py -train -i ../dependency-parsing-files/data/english/train/wsj_train.conll06 -m model -e 10
+
+#test
+#python -u dependency-parser.py -test -i ../dependency-parsing-files/data/english/dev/wsj_dev.conll06 -m model -o predicted.col
 
 #python -u dependency-parser.py -test -i ../dependency-parsing-files/data/english/train/wsj_train.conll06 -m model -o predicted.col
 #python dependency-parser.py -i wsj_train.first-5k.conll06 -o featurebeispiel.txt
