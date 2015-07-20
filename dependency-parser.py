@@ -107,7 +107,6 @@ def train(args):
     for epoch in range(1, int(args.epochs) + 1):
         print "\t\tEpoch: " + str(epoch)
         total = 0
-        correct = 0
 
         for graph_id in sparse_graphs:
             weight_vector = structured_perceptron(sparse_graphs[graph_id], feat_map, rev_feat_map, weight_vector, "train")

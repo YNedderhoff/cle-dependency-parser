@@ -31,15 +31,29 @@ def sum_of_arc_feature_vectors(graph, l):
 
 def structured_perceptron(sparse_graph, feat_map, rev_feat_map, weight_vector, mode):
 
+    y_gold = sparse_graph  # the correct tree
+
+    g = complete_graph(sparse_graph, feat_map, rev_feat_map)  # the complete directed graph
+    g_scored = score(g, weight_vector)
+
+    y_predicted = chu_liu_edmonds(g_scored)
+
     if mode == "train":
 
-        y_gold = sparse_graph  # the correct tree
+        pass
+        # adjust weights, return weight vector
 
-        g = complete_graph(sparse_graph, feat_map, rev_feat_map)  # the complete directed graph
-        g_scored = score(g, weight_vector)
+    elif mode == "test":
 
-        y_predicted = chu_liu_edmonds(g_scored)
-        return weight_vector
+        pass
+        # write prediction into file
+
+    else:
+
+        print "This should not happen."
+
+    return weight_vector
+
     """
         counter = 0
         for head in y_gold:

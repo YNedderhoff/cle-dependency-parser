@@ -27,6 +27,26 @@ class DepTree:
                 if token2.head == token1.id:
                     self.nodes[tid+1].add_edge(token2)
 
+class SparseOwnArc:
+    def __init__(self, head, dependent, score):
+        self.head = head
+        self.dependent = dependent
+        self.score = score
+        self.feat_vec = []
+
+        self.is_cycle = False
+        self.former_dependent = None
+
+class SparseOwnGraph:
+    def __init__(self):
+        self.heads = {}
+
+    def add_arc(self, head, arc):
+        if head in self.heads:
+            self.heads[head].append(arc)
+        else:
+            self.heads[head] = [arc]
+
 class SparseArc:
     def __init__(self, nodeToken):
         self.head = int(nodeToken.head)
@@ -143,6 +163,7 @@ def complete_graph(graph, feat_map, rev_feat_map):
                     new_feat_vec.append(feat_map["hform,dpos:"+hform+","+dpos])
                 if "hpos,dform:"+hpos+","+dform in feat_map:
                     new_feat_vec.append(feat_map["hpos,dform:"+hpos+","+dform])
+
                 complete_g = add_sparse_arc(complete_g, head, new_feat_vec, Token(str(dependent_id) + "\t_\t_\t_\t_\t_\t" + str(head) + "\t_\t_\t_"))
 
     return complete_g
