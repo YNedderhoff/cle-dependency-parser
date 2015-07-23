@@ -43,7 +43,6 @@ for head in y:
     for arc in y[head]:
         print str(head) + " --> " + str(arc.dependent) + ", " + str(arc.score)
 print "--"
-"""
 
 c = ManualSparseGraph()
 c.add_arc(0, SparseArc(0, 1, 10.0))
@@ -78,7 +77,7 @@ print graph_dict_c
 
 if graph_dict_b == graph_dict_c:
     print "yes3"
-"""
+
 d = ManualSparseGraph()
 d.add_arc(0, SparseArc(0, 1, 5.0))
 d.add_arc(0, SparseArc(0, 2, 1.0))
@@ -96,7 +95,7 @@ for head in y:
     for arc in y[head]:
         print str(head) + " --> " + str(arc.dependent) + ", " + str(arc.score)
 print "--"
-"""
+
 e = ManualSparseGraph()
 e.add_arc(0, SparseArc(0, 3, 1.0))
 e.add_arc(1, SparseArc(1, 2, 11.0))
@@ -112,4 +111,3 @@ print "--"
 
 
 print cycle(f, [], sorted(f.keys())[0])
-"""

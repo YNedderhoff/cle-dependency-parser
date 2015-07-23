@@ -10,6 +10,7 @@ def fm (infile):
         for token1 in sentence:
             if int(token1.head) == 0:
                 # at this point ROOT is the head and token1 is the dependent
+                
                 # unigram features
                 local_features.append("hform:__ROOT__")
                 local_features.append("dform:"+token1.form)
@@ -62,59 +63,11 @@ def fm (infile):
     return feat_map
 
 def add_feat_vec_to_sparse_graph(full_graph, sparse_graph, feat_map):
-    counter = 0
+
     for head in full_graph:
         for full_arc in full_graph[head]:
-            counter += 1
-            # print "Counter:"
-            # print counter
-            feat_v = []
 
-            # unigram features
-            if "hform:"+full_arc.head_form in feat_map:
-                feat_v.append(feat_map["hform:"+full_arc.head_form])
-            if "hpos:"+full_arc.head_pos in feat_map:
-                feat_v.append(feat_map["hpos:"+full_arc.head_pos])
-            if "dform:"+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["dform:"+full_arc.dependent_form])
-            if "dpos:"+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["dpos:"+full_arc.dependent_pos])
-            if "hform,dpos:"+full_arc.head_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,dpos:"+full_arc.head_form+","+full_arc.dependent_pos])
-            if "hpos,dform:"+full_arc.head_pos+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hpos,dform:"+full_arc.head_pos+","+full_arc.dependent_form])
-            if "hform,hpos:"+full_arc.head_form+","+full_arc.head_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos:"+full_arc.head_form+","+full_arc.head_pos])
-            if "dform,dpos:"+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["dform,dpos:"+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "bpos:"+full_arc.rel in feat_map:
-                feat_v.append(feat_map["bpos:"+full_arc.rel])
-
-            # bigram features
-            if "hform,hpos,dform,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos,dform,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hpos,dform,dpos:"+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,dform,dpos:"+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hform,dform,dpos:"+full_arc.head_form+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,dform,dpos:"+full_arc.head_form+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hform,hpos,dform:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,hpos,dform:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form])
-            if "hform,hpos,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_pos])
-            if "hform,dform:"+full_arc.head_form+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,dform:"+full_arc.head_form+","+full_arc.dependent_form])
-            if "hpos,dpos:"+full_arc.head_pos+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,dpos:"+full_arc.head_pos+","+full_arc.dependent_pos])
-
-            # other
-            if "hpos,bpos,dpos:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,bpos,dpos:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_pos])
-            if "hpos,bpos,dform:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hpos,bpos,dform:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_form])
-            if "hform,bpos,dpos:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,bpos,dpos:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_pos])
-            if "hform,bpos,dform:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,bpos,dform:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_form])
+            feat_v = fill_feat_vec(full_arc, feat_map)
 
             for sparse_arc in sparse_graph[head]:
                 if sparse_arc.dependent == full_arc.dependent:
@@ -125,55 +78,8 @@ def add_feat_vec_to_sparse_graph(full_graph, sparse_graph, feat_map):
 def add_feat_vec_to_full_graph(full_graph, feat_map):
     for head in full_graph:
         for full_arc in full_graph[head]:
-            feat_v = []
 
-            # unigram features
-            if "hform:"+full_arc.head_form in feat_map:
-                feat_v.append(feat_map["hform:"+full_arc.head_form])
-            if "hpos:"+full_arc.head_pos in feat_map:
-                feat_v.append(feat_map["hpos:"+full_arc.head_pos])
-            if "dform:"+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["dform:"+full_arc.dependent_form])
-            if "dpos:"+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["dpos:"+full_arc.dependent_pos])
-            if "hform,dpos:"+full_arc.head_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,dpos:"+full_arc.head_form+","+full_arc.dependent_pos])
-            if "hpos,dform:"+full_arc.head_pos+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hpos,dform:"+full_arc.head_pos+","+full_arc.dependent_form])
-            if "hform,hpos:"+full_arc.head_form+","+full_arc.head_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos:"+full_arc.head_form+","+full_arc.head_pos])
-            if "dform,dpos:"+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["dform,dpos:"+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "bpos:"+full_arc.rel in feat_map:
-                feat_v.append(feat_map["bpos:"+full_arc.rel])
-
-            # bigram features
-            if "hform,hpos,dform,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos,dform,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hpos,dform,dpos:"+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,dform,dpos:"+full_arc.head_pos+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hform,dform,dpos:"+full_arc.head_form+","+full_arc.dependent_form+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,dform,dpos:"+full_arc.head_form+","+full_arc.dependent_form+","+full_arc.dependent_pos])
-            if "hform,hpos,dform:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,hpos,dform:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_form])
-            if "hform,hpos,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,hpos,dpos:"+full_arc.head_form+","+full_arc.head_pos+","+full_arc.dependent_pos])
-            if "hform,dform:"+full_arc.head_form+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,dform:"+full_arc.head_form+","+full_arc.dependent_form])
-            if "hpos,dpos:"+full_arc.head_pos+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,dpos:"+full_arc.head_pos+","+full_arc.dependent_pos])
-
-            # other
-            if "hpos,bpos,dpos:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hpos,bpos,dpos:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_pos])
-            if "hpos,bpos,dform:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hpos,bpos,dform:"+full_arc.head_pos+","+full_arc.rel+","+full_arc.dependent_form])
-            if "hform,bpos,dpos:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_pos in feat_map:
-                feat_v.append(feat_map["hform,bpos,dpos:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_pos])
-            if "hform,bpos,dform:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_form in feat_map:
-                feat_v.append(feat_map["hform,bpos,dform:"+full_arc.head_form+","+full_arc.rel+","+full_arc.dependent_form])
-
-            full_arc.feat_vec = feat_v
+            full_arc.feat_vec = fill_feat_vec(full_arc, feat_map)
 
     return full_graph
 
@@ -182,3 +88,58 @@ def reverse_feat_map(feat_map):
     for feature in feat_map:
         rev_feat_map[feat_map[feature]] = feature
     return rev_feat_map
+
+
+def fill_feat_vec(arc, feat_map):
+
+    # checks for the arc if the features are in the feature representation and returns it's feature vector
+
+    feat_v = []
+
+    # unigram features
+    if "hform:"+arc.head_form in feat_map:
+        feat_v.append(feat_map["hform:"+arc.head_form])
+    if "hpos:"+arc.head_pos in feat_map:
+        feat_v.append(feat_map["hpos:"+arc.head_pos])
+    if "dform:"+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["dform:"+arc.dependent_form])
+    if "dpos:"+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["dpos:"+arc.dependent_pos])
+    if "hform,dpos:"+arc.head_form+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hform,dpos:"+arc.head_form+","+arc.dependent_pos])
+    if "hpos,dform:"+arc.head_pos+","+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["hpos,dform:"+arc.head_pos+","+arc.dependent_form])
+    if "hform,hpos:"+arc.head_form+","+arc.head_pos in feat_map:
+        feat_v.append(feat_map["hform,hpos:"+arc.head_form+","+arc.head_pos])
+    if "dform,dpos:"+arc.dependent_form+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["dform,dpos:"+arc.dependent_form+","+arc.dependent_pos])
+    if "bpos:"+arc.rel in feat_map:
+        feat_v.append(feat_map["bpos:"+arc.rel])
+
+    # bigram features
+    if "hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos])
+    if "hpos,dform,dpos:"+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hpos,dform,dpos:"+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos])
+    if "hform,dform,dpos:"+arc.head_form+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hform,dform,dpos:"+arc.head_form+","+arc.dependent_form+","+arc.dependent_pos])
+    if "hform,hpos,dform:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["hform,hpos,dform:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form])
+    if "hform,hpos,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hform,hpos,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_pos])
+    if "hform,dform:"+arc.head_form+","+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["hform,dform:"+arc.head_form+","+arc.dependent_form])
+    if "hpos,dpos:"+arc.head_pos+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hpos,dpos:"+arc.head_pos+","+arc.dependent_pos])
+
+    # other
+    if "hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos])
+    if "hpos,bpos,dform:"+arc.head_pos+","+arc.rel+","+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["hpos,bpos,dform:"+arc.head_pos+","+arc.rel+","+arc.dependent_form])
+    if "hform,bpos,dpos:"+arc.head_form+","+arc.rel+","+arc.dependent_pos in feat_map:
+        feat_v.append(feat_map["hform,bpos,dpos:"+arc.head_form+","+arc.rel+","+arc.dependent_pos])
+    if "hform,bpos,dform:"+arc.head_form+","+arc.rel+","+arc.dependent_form in feat_map:
+        feat_v.append(feat_map["hform,bpos,dform:"+arc.head_form+","+arc.rel+","+arc.dependent_form])
+
+    return feat_v
