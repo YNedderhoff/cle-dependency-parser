@@ -8,6 +8,8 @@ import codecs
 import cPickle
 import gzip
 
+from copy import deepcopy
+
 from modules.perceptron import structured_perceptron
 from modules.token import sentences
 from modules.featmap import fm, add_feat_vec_to_sparse_graph, add_feat_vec_to_full_graph, reverse_feat_map
@@ -106,18 +108,30 @@ def train(args):
     start = time.time()
     print "\tStart training, Total Instances: " + str(len(sparse_graphs))
 
+    if args.decrease_alpha:
+        print "\t\tReduce smoothing coefficient activated."
+
+    alpha = 0.5  # smoothing coefficient for the weight adjustments
+
     for epoch in range(1, int(args.epochs) + 1):
-        print "\t\tEpoch: " + str(epoch)
+
+        print "\t\tEpoch: " + str(epoch) + ", Smoothing coefficient: " + str(alpha)
+
         total = 0
         correct = 0
         errors = 0
+
         for graph_id in sparse_graphs:
-            weight_vector, correct, errors = structured_perceptron(sparse_graphs[graph_id], feat_map, rev_feat_map, weight_vector, correct, errors, "train")
+            weight_vector, correct, errors = structured_perceptron(deepcopy(sparse_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, correct, errors, "train", alpha)
             total += 1
             if total % 500 == 0:
                 print "\t\t\tInstance Nr. " + str(total) + ", Correct: " + str(correct) + ", Errors: " + str(errors)
                 # print "\t\t\tCurrent weight vector:"
                 # print "\t\t\t" + str(weight_vector)
+
+        if args.decrease_alpha: # decrease alpha after every epoch
+            alpha /= 2
+
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
 
@@ -179,7 +193,7 @@ def test(args):
     errors = 0
     for graph_id in full_graphs:
         tmp_errors = errors
-        predicted_graph, errors = structured_perceptron(full_graphs[graph_id], feat_map, rev_feat_map, weight_vector, 0, errors, "test")
+        predicted_graph, errors = structured_perceptron(deepcopy(full_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, 0, errors, "test")
 
         if tmp_errors == errors:
             write_graph_to_file(predicted_graph, args.out_file)
@@ -217,6 +231,7 @@ if __name__ == '__main__':
     arg_par.add_argument('-m', '--model', dest='model', help='model', default='model')
     arg_par.add_argument('-o', '--output', dest='out_file', help='output file', default='predicted.col')
     arg_par.add_argument('-e', '--epochs', dest='epochs', help='epochs', default='10')
+    arg_par.add_argument('-decrease-alpha', dest='decrease_alpha', action='store_true', help='decrease alpha', default=False)
 
     arguments = arg_par.parse_args()
 

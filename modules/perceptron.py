@@ -21,7 +21,7 @@ def make_graph_compareable(graph):
             graph_dict[head].append(arc.dependent)
     return graph_dict
 
-def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct, errors, mode):
+def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct, errors, mode, alpha=0.5):
     if mode == "train":
         y_gold = graph  # the correct tree
         g = complete_graph(graph, feat_map, rev_feat_map)  # the complete, directed graph
@@ -51,7 +51,7 @@ def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct,
 
             tmp4 = []
             for i in range(len(weight_vector)):
-                tmp4.append(tmp3[i] * 0.5)
+                tmp4.append(tmp3[i] * alpha)
 
             w_new = []
             for i in range(len(weight_vector)):
