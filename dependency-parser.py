@@ -10,9 +10,8 @@ import gzip
 
 from modules.perceptron import structured_perceptron
 from modules.token import sentences
-from modules.featmap import fm, add_feat_vec, reverse_feat_map
-from modules.scoring import score
-from modules.graphs import DepTree, FullGraph, SparseGraph
+from modules.featmap import fm, add_feat_vec_to_sparse_graph, add_feat_vec_to_full_graph, reverse_feat_map
+from modules.graphs import CompleteFullGraph, FullGraph, SparseGraph, write_graph_to_file
 
 def create_weight_vector(l):
     # returns a list of length len(l) filled with 0.0
@@ -60,15 +59,14 @@ def train(args):
     print "\t\tDone, " + str(stop - start) + " sec"
 
     start = time.time()
-    print "\tCreating sparse representation of every sentence..."
+    print "\tCreating sparse graph representation of every sentence..."
 
     sparse_graphs = {}
 
     for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
 
-        dep_tree = DepTree(sentence).nodes
-        full_graph = FullGraph(dep_tree).heads
-        sparse_graph = SparseGraph(dep_tree).heads
+        full_graph = FullGraph(sentence).heads
+        sparse_graph = SparseGraph(sentence).heads
 
         # Check if full_graph and sparse_graph ids match at every point
         for full_head in full_graph:
@@ -81,73 +79,120 @@ def train(args):
                     print "Error: The full and sparse graph representations do not match."
 
         # add feature vec to every graph
-        sparse_graph = add_feat_vec(full_graph, sparse_graph, feat_map)
+        sparse_graph = add_feat_vec_to_sparse_graph(full_graph, sparse_graph, feat_map)
 
         # check if every feature vector is filled with the correct number of features.
 
         for head in sparse_graph:
             for arc in sparse_graph[head]:
-                if not arc.feat_vec:
+                if arc.feat_vec:
+                    if int(arc.head) == 0:
+                        if len(arc.feat_vec) != 10:
+                            print "Length of arc feature vector is wrong."
+                            print arc.feat_vec
+                    else:
+                        if len(arc.feat_vec) != 20:
+                            print "Length of arc feature vector is wrong."
+                            print arc.feat_vec
+                else:
                     print "Error: Feature vector is empty."
-                elif len(arc.feat_vec) != 6 and arc.head != 0:
-                    print "Length of arc feature vector is wrong."
-                    print arc.feat_vec
-                elif len(arc.feat_vec) != 2 and arc.head == 0:
-                    print "Length of arc feature vector is wrong (__ROOT__ arc)."
-                    print arc.feat_vec
 
         sparse_graphs[len(sparse_graphs)] = sparse_graph
+
     stop = time.time()
     print "\t\tNumber of sentences: " + str(len(sparse_graphs))
     print "\t\tDone, " + str(stop - start) + " sec"
 
     start = time.time()
-    print "\tStart training..."
+    print "\tStart training, Total Instances: " + str(len(sparse_graphs))
 
     for epoch in range(1, int(args.epochs) + 1):
         print "\t\tEpoch: " + str(epoch)
         total = 0
-
+        correct = 0
+        errors = 0
         for graph_id in sparse_graphs:
-            weight_vector = structured_perceptron(sparse_graphs[graph_id], feat_map, rev_feat_map, weight_vector, "train")
+            weight_vector, correct, errors = structured_perceptron(sparse_graphs[graph_id], feat_map, rev_feat_map, weight_vector, correct, errors, "train")
             total += 1
             if total % 500 == 0:
-                print "\t\t\tInstance Nr. " + str(total)
+                print "\t\t\tInstance Nr. " + str(total) + ", Correct: " + str(correct) + ", Errors: " + str(errors)
+                # print "\t\t\tCurrent weight vector:"
+                # print "\t\t\t" + str(weight_vector)
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
 
-    """
     start = time.time()
-    print "\tSaving the model and the features to file '" +str(args.model) + "'..."
+    print "\tSaving the model and the features to file '" + str(args.model) + "'..."
 
-    save(args.model, [feat_map, w])
+    save(args.model, [feat_map, weight_vector])
 
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
-    """
+
 
 def test(args):
-    """
+
     # load classifier vectors (model) and feature vector from file:
     print "\tLoading the model and the features from file '" + str(args.model) + "'"
     start = time.time()
 
     model_list = load(args.model)
     feat_map = model_list[0]
-    w = model_list[1]
+    rev_feat_map = reverse_feat_map(feat_map)
+    weight_vector = model_list[1]
 
     stop = time.time()
     print "\t\t" + str(len(feat_map)) + " features loaded"
     print "\t\tDone, " + str(stop - start) + " sec."
 
     start = time.time()
-    print "\tAnnotate file '" + args.in_file + "'..."
+    print "\tCreating graph representation of every sentence..."
 
-    structured_perceptron(args, feat_map, w)
+    full_graphs = {}
+
+    empty_feat_vec = 0
+
+    for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
+
+        full_graph = CompleteFullGraph(sentence).heads
+
+        # add feature vec to every graph
+        full_graph = add_feat_vec_to_full_graph(full_graph, feat_map)
+
+        # feat_vec sanity
+
+        for head in full_graph:
+            for arc in full_graph[head]:
+                if not arc.feat_vec:
+                    empty_feat_vec += 1
+
+        full_graphs[len(full_graphs)] = full_graph
 
     stop = time.time()
+    print "\t\tNumber of sentences: " + str(len(full_graphs)) + ", Number of arcs with empty feature vectors: " + str(empty_feat_vec)
     print "\t\tDone, " + str(stop - start) + " sec"
-    """
+
+    start = time.time()
+    print "\tStart annotating the test file, Total Instances: " + str(len(full_graphs))
+
+    total = 0
+    errors = 0
+    for graph_id in full_graphs:
+        tmp_errors = errors
+        predicted_graph, errors = structured_perceptron(full_graphs[graph_id], feat_map, rev_feat_map, weight_vector, 0, errors, "test")
+
+        if tmp_errors == errors:
+            write_graph_to_file(predicted_graph, args.out_file)
+        else:
+            write_graph_to_file(full_graphs[graph_id], args.out_file, "error")
+
+        total += 1
+        if total % 500 == 0:
+            print "\t\tInstance Nr. " + str(total) + ", Errors: " + str(errors)
+            # print "\t\t\tCurrent weight vector:"
+            # print "\t\t\t" + str(weight_vector)
+    stop = time.time()
+    print "\t\tDone, " + str(stop - start) + " sec"
 
 def write_to_file(token, file_obj):
     print >> file_obj, str(token.id) + "\t" + str(token.form) + "\t" + str(token.lemma) + "\t" + str(
@@ -199,52 +244,6 @@ if __name__ == '__main__':
             t.tag(arguments.in_file, arguments.model, arguments.output_file)
 
         """
+
     t1 = time.time()
     print "\n\tDone. Total time: " + str(t1 - t0) + "sec.\n"
-    """
-    test_tree = {
-        "0_Root": {
-            "1_John": [9.0, {}],
-            "2_saw": [10.0, {}],
-            "3_Mary": [9.0, {}]
-        },
-        "1_John": {
-            "2_saw": [20.0, {}],
-            "3_Mary": [11.0, {}]
-        },
-        "2_saw": {
-            "1_John": [30.0, {}],
-            "3_Mary": [30.0, {}]
-        },
-        "3_Mary": {
-            "1_John": [11.0, {}],
-            "2_saw": [0.0, {}]
-        }
-    }
-
-    test_tree2 = {
-        "0_Root": {
-            "1_John": [5.0, {}],
-            "2_saw": [10.0, {}],
-            "3_Mary": [15.0, {}]
-        },
-        "1_John": {
-            "2_saw": [25.0, {}],
-            "3_Mary": [25.0, {}]
-        },
-        "2_saw": {
-            "1_John": [20.0, {}],
-            "3_Mary": [15.0, {}]
-        },
-        "3_Mary": {
-            "1_John": [10.0, {}],
-            "2_saw": [30.0, {}]
-        }
-    }
-    predicted = chu_liu_edmonds(test_tree2)
-    print predicted
-
-
-    # run_tests()
-    # run(arguments)
-    """
