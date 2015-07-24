@@ -4,6 +4,7 @@
 import time
 import os
 import codecs
+import random
 
 import cPickle
 import gzip
@@ -14,6 +15,7 @@ from modules.perceptron import structured_perceptron
 from modules.token import sentences
 from modules.featmap import fm, add_feat_vec_to_sparse_graph, add_feat_vec_to_full_graph, reverse_feat_map
 from modules.graphs import CompleteFullGraph, FullGraph, SparseGraph, write_graph_to_file
+from modules.evaluation import evaluate
 
 def create_weight_vector(l):
     # returns a list of length len(l) filled with 0.0
@@ -112,6 +114,7 @@ def train(args):
         print "\t\tReduce smoothing coefficient activated."
 
     alpha = 0.5  # smoothing coefficient for the weight adjustments
+    graph_ids = sparse_graphs.keys() #list of dict keys, needed when shuffeling tokens after every epoch
 
     for epoch in range(1, int(args.epochs) + 1):
 
@@ -121,7 +124,7 @@ def train(args):
         correct = 0
         errors = 0
 
-        for graph_id in sparse_graphs:
+        for graph_id in graph_ids:
             weight_vector, correct, errors = structured_perceptron(deepcopy(sparse_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, correct, errors, "train", alpha)
             total += 1
             if total % 500 == 0:
@@ -129,8 +132,11 @@ def train(args):
                 # print "\t\t\tCurrent weight vector:"
                 # print "\t\t\t" + str(weight_vector)
 
-        if args.decrease_alpha: # decrease alpha after every epoch
+        if args.decrease_alpha:  # decrease alpha after every epoch
             alpha /= 2
+
+        if args.shuffle_sentences:  # shuffle sentences after every epoch
+            random.shuffle(graph_ids)
 
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
@@ -229,9 +235,11 @@ if __name__ == '__main__':
 
     arg_par.add_argument('-i', '--input', dest='in_file', help='input file', required=True)
     arg_par.add_argument('-m', '--model', dest='model', help='model', default='model')
-    arg_par.add_argument('-o', '--output', dest='out_file', help='output file', default='predicted.col')
+    arg_par.add_argument('-g', '--gold', dest='gold', help='gold', default='gold.conll06')
+    arg_par.add_argument('-o', '--output', dest='out_file', help='output file', default='predicted.conll06')
     arg_par.add_argument('-e', '--epochs', dest='epochs', help='epochs', default='10')
     arg_par.add_argument('-decrease-alpha', dest='decrease_alpha', action='store_true', help='decrease alpha', default=False)
+    arg_par.add_argument('-shuffle-sentences', dest='shuffle_sentences', action='store_true', help='shuffle sentences', default=False)
 
     arguments = arg_par.parse_args()
 
@@ -241,19 +249,15 @@ if __name__ == '__main__':
         if arguments.train:
             print "Running in training mode\n"
             train(arguments)
-            #cle(arguments)
 
         elif arguments.test:
             print "Running in test mode\n"
             test(arguments)
 
-        """
-
         elif arguments.evaluate:
             print "Running in evaluation mode\n"
-            out_stream = open(arguments.output_file, 'w')
-            evaluate(arguments.in_file, out_stream)
-            out_stream.close()
+            evaluate(arguments)
+        """
         elif arguments.tag:
             print "Running in tag mode\n"
             t.tag(arguments.in_file, arguments.model, arguments.output_file)

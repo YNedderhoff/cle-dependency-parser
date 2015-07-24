@@ -97,6 +97,7 @@ def fill_feat_vec(arc, feat_map):
     feat_v = []
 
     # unigram features
+
     if "hform:"+arc.head_form in feat_map:
         feat_v.append(feat_map["hform:"+arc.head_form])
     if "hpos:"+arc.head_pos in feat_map:
@@ -117,6 +118,7 @@ def fill_feat_vec(arc, feat_map):
         feat_v.append(feat_map["bpos:"+arc.rel])
 
     # bigram features
+
     if "hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
         feat_v.append(feat_map["hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos])
     if "hpos,dform,dpos:"+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
@@ -133,6 +135,7 @@ def fill_feat_vec(arc, feat_map):
         feat_v.append(feat_map["hpos,dpos:"+arc.head_pos+","+arc.dependent_pos])
 
     # other
+    
     if "hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos in feat_map:
         feat_v.append(feat_map["hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos])
     if "hpos,bpos,dform:"+arc.head_pos+","+arc.rel+","+arc.dependent_form in feat_map:

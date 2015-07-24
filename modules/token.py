@@ -1,8 +1,7 @@
 class Token(object):
-    """
-    Represents one token 
-    (a non-empty line in CoNLL09 format).
-    """
+
+    # A non-empty line in CoNLL06 format
+
     def __init__(self, line):
 
         entries = line.split('\t')
@@ -16,10 +15,10 @@ class Token(object):
         self.rel = entries[7].rstrip()
 
 def sentences(file_stream):
-    """
-    Generator that returns sentences as lists of Token objects.
-    Reads CoNLL09 format.
-    """
+
+    # Generator that returns sentences as lists of Token objects.
+    # Reads CoNLL06 format.
+
     sentence = []
     for line in file_stream:
         line = line.rstrip()
@@ -30,3 +29,4 @@ def sentences(file_stream):
             sentence = []
     if sentence:
         yield sentence
+

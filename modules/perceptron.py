@@ -15,10 +15,11 @@ def sum_of_arc_feature_vectors(graph, l):
 
 def make_graph_compareable(graph):
     graph_dict = {}
-    for head in graph:
-        graph_dict[head] = []
+    for head in sorted(graph.keys()):
+        tmp_arcs = []
         for arc in graph[head]:
-            graph_dict[head].append(arc.dependent)
+            tmp_arcs.append(arc.dependent)
+        graph_dict[head] = sorted(tmp_arcs)
     return graph_dict
 
 def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct, errors, mode, alpha=0.5):
@@ -39,9 +40,12 @@ def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct,
             y_predicted = {}
 
         if make_graph_compareable(y_predicted) == make_graph_compareable(y_gold):
+
             correct +=1
+
             return weight_vector, correct, errors
         else:
+
             tmp1 = sum_of_arc_feature_vectors(y_gold, len(weight_vector))
             tmp2 = sum_of_arc_feature_vectors(y_predicted, len(weight_vector))
 
