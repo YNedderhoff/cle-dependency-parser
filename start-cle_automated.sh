@@ -16,4 +16,4 @@ python -u dependency-parser.py -test -i ${CORPORA}/dev/wsj_dev.conll06 -m ${MODE
 python -u dependency-parser.py -ev -i ${PREDICTIONS}/$3".conll06" -g ${CORPORA}/dev/wsj_dev.conll06 -o ${EVALUATIONS}/$4"_sentence".txt
 
 #evaluate
-./eval07.pl -g ${CORPORA}/dev/wsj_dev.conll06 -s ${PREDICTIONS}/$3".conll06" > ${EVALUATIONS}/$4".txt"
+./eval07.pl -g ${CORPORA}/dev/wsj_dev.conll06 -s ${PREDICTIONS}/$3".conll06" >> ${EVALUATIONS}/$4".txt" 2>&1

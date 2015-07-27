@@ -1,14 +1,12 @@
-from graphs import highest_scoring_heads, cycle, reverse_head_graph
+from graphs import highest_scoring_heads, cycle, reverse_head_graph, check_graph_sanity
 from copy import deepcopy
 
 def chu_liu_edmonds(graph):
 
     g = deepcopy(graph)
     g_a = highest_scoring_heads(deepcopy(g))
-    c = cycle(g_a, [], sorted(g_a.keys())[0])
+    c = cycle(g_a)
 
-    if c is None:
-        print "The cycle function returned 'None'."
     if not c:
         return g_a
     else:
@@ -66,6 +64,7 @@ def chu_liu_edmonds(graph):
         y[head_of_cycle] = new_dependents
 
         # adding arcs from inside cycle to inside cycle except the one pointing to cycle_head
+
         for node in c:
             for head in g_a:
                 if head == node:
@@ -76,7 +75,6 @@ def chu_liu_edmonds(graph):
                                     y[head].append(arc)
                                 else:
                                     y[head] = [arc]
-        return y
 
 def contract(g, g_a, c, t_c):
 
@@ -230,6 +228,8 @@ def contract(g, g_a, c, t_c):
                                 g_c[head].append(arc)
                             else:
                                 g_c[head] = [arc]
+                    else:
+                        g_c[head] = [arc]
 
     return g_c, t_c
 

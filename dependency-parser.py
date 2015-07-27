@@ -1,6 +1,8 @@
 # !/bin/python
 #  -*- coding: utf-8 -*-
 
+import profile
+
 import time
 import os
 import codecs
@@ -114,7 +116,7 @@ def train(args):
         print "\t\tReduce smoothing coefficient activated."
 
     alpha = 0.5  # smoothing coefficient for the weight adjustments
-    graph_ids = sparse_graphs.keys() #list of dict keys, needed when shuffeling tokens after every epoch
+    graph_ids = sparse_graphs.keys()  # list of dict keys, needed when shuffeling tokens after every epoch
 
     for epoch in range(1, int(args.epochs) + 1):
 
@@ -128,7 +130,8 @@ def train(args):
             weight_vector, correct, errors = structured_perceptron(deepcopy(sparse_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, correct, errors, "train", alpha)
             total += 1
             if total % 500 == 0:
-                print "\t\t\tInstance Nr. " + str(total) + ", Correct: " + str(correct) + ", Errors: " + str(errors)
+                print "\t\t\tInstance Nr. " + str(total) + ", Correct: " + str(correct) + " (" \
+                    + str((correct*100)/total) + "%), Errors: " + str(errors)
                 # print "\t\t\tCurrent weight vector:"
                 # print "\t\t\t" + str(weight_vector)
 
@@ -164,47 +167,32 @@ def test(args):
     stop = time.time()
     print "\t\t" + str(len(feat_map)) + " features loaded"
     print "\t\tDone, " + str(stop - start) + " sec."
-
     start = time.time()
-    print "\tCreating graph representation of every sentence..."
-
-    full_graphs = {}
-
-    empty_feat_vec = 0
-
+    sentence_count = 0
     for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
+        sentence_count += 1
 
-        full_graph = CompleteFullGraph(sentence).heads
-
-        # add feature vec to every graph
-        full_graph = add_feat_vec_to_full_graph(full_graph, feat_map)
-
-        # feat_vec sanity
-
-        for head in full_graph:
-            for arc in full_graph[head]:
-                if not arc.feat_vec:
-                    empty_feat_vec += 1
-
-        full_graphs[len(full_graphs)] = full_graph
-
-    stop = time.time()
-    print "\t\tNumber of sentences: " + str(len(full_graphs)) + ", Number of arcs with empty feature vectors: " + str(empty_feat_vec)
-    print "\t\tDone, " + str(stop - start) + " sec"
-
-    start = time.time()
-    print "\tStart annotating the test file, Total Instances: " + str(len(full_graphs))
+    print "\tStart annotating the test file, Total Instances: " + str(sentence_count)
 
     total = 0
     errors = 0
-    for graph_id in full_graphs:
-        tmp_errors = errors
-        predicted_graph, errors = structured_perceptron(deepcopy(full_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, 0, errors, "test")
 
-        if tmp_errors == errors:
+    for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
+
+        # create complete, directed graph representation of sentence
+        full_graph = CompleteFullGraph(sentence).heads
+
+        # add feature vec
+        full_graph = add_feat_vec_to_full_graph(full_graph, feat_map)
+
+        tmp_errors = errors
+
+        predicted_graph, errors = structured_perceptron(deepcopy(full_graph), feat_map, rev_feat_map, weight_vector, 0, errors, "test")
+
+        if tmp_errors == errors:  # no error occured during prediction
             write_graph_to_file(predicted_graph, args.out_file)
-        else:
-            write_graph_to_file(full_graphs[graph_id], args.out_file, "error")
+        else:  # a error occured during prediction
+            write_graph_to_file(full_graph, args.out_file, "error")
 
         total += 1
         if total % 500 == 0:
@@ -248,7 +236,7 @@ if __name__ == '__main__':
     else:
         if arguments.train:
             print "Running in training mode\n"
-            train(arguments)
+            profile.run(train(arguments))
 
         elif arguments.test:
             print "Running in test mode\n"

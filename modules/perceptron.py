@@ -1,5 +1,5 @@
 from scoring import score
-from graphs import complete_graph, check_graph_sanity
+from graphs import complete_sparse_graph, check_graph_sanity
 from cle import chu_liu_edmonds
 
 def sum_of_arc_feature_vectors(graph, l):
@@ -23,24 +23,27 @@ def make_graph_compareable(graph):
     return graph_dict
 
 def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct, errors, mode, alpha=0.5):
+
     if mode == "train":
+
         y_gold = graph  # the correct tree
-        g = complete_graph(graph, feat_map, rev_feat_map)  # the complete, directed graph
-        g_scored = score(g, weight_vector) # the scored, complete, directed graph
+        g = complete_sparse_graph(graph, feat_map, rev_feat_map)  # the complete, directed graph
+        g_scored = score(g, weight_vector)  # the scored, complete, directed graph
+
+        tmp_errors = errors
 
         try:
             y_predicted = chu_liu_edmonds(g_scored)
 
-            if not check_graph_sanity(y_gold, y_predicted):
+            if not check_graph_sanity(y_predicted, y_gold):
                 errors += 1
-                y_predicted = {}
 
         except KeyError:
             errors += 1
-            y_predicted = {}
 
         if make_graph_compareable(y_predicted) == make_graph_compareable(y_gold):
-
+            if tmp_errors < errors:
+                print "Correct but error, this is not possible"
             correct +=1
 
             return weight_vector, correct, errors
@@ -72,16 +75,18 @@ def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct,
 
     elif mode == "test":
 
-        g_scored = score(graph, weight_vector) # the scored, complete, directed graph
+        g_scored = score(graph, weight_vector)  # the scored, complete, directed graph
 
         try:
             y_predicted = chu_liu_edmonds(g_scored)
 
-            if not check_graph_sanity(graph, y_predicted):
+            if not check_graph_sanity(y_predicted, graph):
+                print "sanity check not passed."
                 errors += 1
                 y_predicted = {}
 
         except KeyError:
+            print "Key Error."
             errors += 1
             y_predicted = {}
 

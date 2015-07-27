@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 class SparseArc:  # sparse representation of an arc
     def __init__(self, head, dependent, s=0.0):
         self.head = int(head)
@@ -138,102 +141,156 @@ def highest_scoring_heads(graph):  # returns a graph where every dependent only 
     return reverse_dep_graph(highest)
 
 
-def cycle(graph, visited, n):  # returns a list containing the nodes which are in a cycle (if existing), else []
-
-    # n is "next to visit"
-
+def cycle_per_head(graph, v, n):
     c = []
-    v = visited
-    for h_id in graph:
-        if h_id == n:
-            v.append(h_id)
-            for arc in graph[h_id]:
-                if arc.dependent in v:
-                    # v.append(arc.dependent)
-                    c = v[v.index(arc.dependent):]
-                else:
-                    if arc.dependent in graph:
-                        c = cycle(graph, v, arc.dependent)
+    v.append(n)
+    for arc in graph[n]:
+        if arc.dependent == v[0]:
+            # v.append(arc.dependent)
+            c = v
+            return c
+        elif arc.dependent not in v:
+            if arc.dependent in graph:
+                c = cycle_per_head(graph, deepcopy(v), arc.dependent)
                 if c:
                     return c
-            if c:
-                return c
-        if c:
-            return c
     return c
 
 
+def cycle(graph):  # returns a list containing the nodes which are in a cycle (if existing), else []
+
+    # n is "next to visit"
+
+    cycles = []
+    for head in sorted(graph.keys()):
+        visited = []
+        cy = cycle_per_head(graph, visited, head)
+        if cy:
+            cycles.append(cy)
+    if cycles:
+        return cycles[0]
+    else:
+        return []
+
+
 def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to file in conll06 format
-    arcs = {}
     if mode == "normal":
-        for head in graph:
-            for arc in graph[head]:
-                if arc.dependent in arcs:
-                    print "A dependent has more than one head."
-                else:
-                    arcs[arc.dependent] = arc
+
+        rev = reverse_head_graph(graph)
         out = open(out_file, "a")
-        for arc in sorted(arcs):
+        for dependent in sorted(rev.keys()):
             # without rel
-            print >> out, str(arcs[arc].dependent) + "\t" + arcs[arc].dependent_form + "\t" + arcs[arc].dependent_lemma \
-                          + "\t" + arcs[arc].dependent_pos + "\t_\t_\t" + str(arcs[arc].head) + "\t" + "_" + "\t_\t_"
+            print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" \
+                + rev[dependent][0].dependent_lemma + "\t" + rev[dependent][0].dependent_pos + "\t_\t_\t" \
+                + str(rev[dependent][0].head) + "\t" + "_" + "\t_\t_"
+
             # with rel
-            # print >> out, str(arcs[arc].dependent) + "\t" + arcs[arc].dependent_form + "\t" + \
-            #   arcs[arc].dependent_lemma + "\t" + arcs[arc].dependent_pos + "\t_\t_\t" + str(arcs[arc].head) + \
-            #       "\t" + arcs[arc].rel + "\t_\t_"
+            # print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" + \
+            #   rev[dependent][0].].dependent_lemma + "\t" + rev[dependent][0].].dependent_pos + "\t_\t_\t" + str(rev[dependent][0].].head) + \
+            #       "\t" + rev[dependent][0].].rel + "\t_\t_"
+
         print >> out, ""
         out.close()
+
     elif mode == "error":
-        for head in graph:
-            for arc in graph[head]:
-                if arc.dependent not in arcs:
-                    arcs[arc.dependent] = arc
+        rev = reverse_head_graph(graph)
         out = open(out_file, "a")
-        for arc in sorted(arcs):
-            print >> out, str(arcs[arc].dependent) + "\t" + arcs[arc].dependent_form + "\t" + arcs[
-                arc].dependent_lemma + "\t" + arcs[arc].dependent_pos + "\t_\t_\t" + \
-                          "-1" + "\t" + "__ERROR__" + "\t_\t_"
+        for dependent in sorted(rev.keys()):
+            print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" \
+                + rev[dependent][0].dependent_lemma + "\t" + rev[dependent][0].dependent_pos + "\t_\t_\t" \
+                + "-1" + "\t" + "__ERROR__" + "\t_\t_"
         print >> out, ""
         out.close()
 
 
-def check_graph_sanity(compare_graph, predicted_graph):  # sanity check on graph
+def check_graph_sanity(predicted_graph, compare_graph={}):  # sanity check on graph
     sane = True
+    # check if root exists
 
-    if sane:
+    if predicted_graph == {}:
+        print "Predicted Graph is empty"
+        sane = False
+
+    if cycle(predicted_graph):
+        print "Predicted Graph contains cycle."
+        sane = False
+
+    root_found = False
+
+    for head in predicted_graph:
+        if head == 0:
+            root_found = True
+
+            if len(predicted_graph[head]) < 1:
+                sane = False
+                print "Root has no dependent"
+            """
+            elif len(predicted_graph[head]) > 1:
+                sane = False
+                print "Root has more than one dependent"
+            """
+        elif len(predicted_graph[head]) < 1:
+            sane = False
+            print "A head has no dependent"
+    if not root_found:
+        sane = False
+        print "No Root node found"
+
+    root_is_dependent = False
+    for head in predicted_graph:
+        for arc in predicted_graph[head]:
+            if arc.dependent == 0:
+                root_is_dependent = True
+    if root_is_dependent:
+        sane = False
+        print "root_is_dependent"
+    # check if every node is in the predicted graph
+    if compare_graph:
         compare_nodes = []
         predicted_nodes = []
+
         for head in compare_graph:
+            if head not in compare_nodes:
+                compare_nodes.append(head)
             for arc in compare_graph[head]:
                 if arc.dependent not in compare_nodes:
                     compare_nodes.append(arc.dependent)
 
         for head in predicted_graph:
+            if head not in predicted_nodes:
+                predicted_nodes.append(head)
             for arc in predicted_graph[head]:
                 if arc.dependent not in predicted_nodes:
                     predicted_nodes.append(arc.dependent)
-
         if sorted(compare_nodes) != sorted(predicted_nodes):
+            print sorted(compare_nodes)
+            print sorted(predicted_nodes)
             print "Error: Nodes do not match."
             sane = False
 
-    if sane:
-        arcs = {}
-        for head in predicted_graph:
-            local_dependents = []
-            for arc in predicted_graph[head]:
-                if arc.dependent in local_dependents:
-                    print "Error: A dependent is more than once in a head."
-                    sane = False
-                else:
-                    local_dependents.append(arc.dependent)
-                if arc.dependent in arcs:
-                    print "A dependent has more than one head."
-                    sane = False
-                else:
-                    arcs[arc.dependent] = arc
-    return sane
+            for node in predicted_nodes:
+                if node not in compare_nodes:
+                    print "predicted has nodes that are not in compare"
 
+    # check if every dependent has only one head
+    arcs = {}
+    for head in predicted_graph:
+        local_dependents = []
+        if not predicted_graph[head]:
+            print "head has no dependent"
+            sane = False
+        for arc in predicted_graph[head]:
+            if arc.dependent in local_dependents:
+                print "Error: A dependent is more than once in a head."
+                sane = False
+            else:
+                local_dependents.append(arc.dependent)
+            if arc.dependent in arcs:
+                print "A dependent has more than one head."
+                sane = False
+            else:
+                arcs[arc.dependent] = arc
+    return sane
 
 
 def add_sparse_arc(graph, head_id, dependent_id, feat_vec):  # used in complete_graph to add SparseArc objects to graph
@@ -250,7 +307,9 @@ def add_sparse_arc(graph, head_id, dependent_id, feat_vec):  # used in complete_
 
     return graph
 
-def complete_graph(graph, feat_map, rev_feat_map):  # completes a graph (every node points to every node, except ROOT)
+
+def complete_sparse_graph(graph, feat_map,
+                          rev_feat_map):  # completes a graph (every node points to every node, except ROOT)
     complete_g = {}
     dependents = {}
     for head in graph:
@@ -268,7 +327,6 @@ def complete_graph(graph, feat_map, rev_feat_map):  # completes a graph (every n
                 complete_g[head].append(arc)
             else:
                 complete_g[head] = [arc]
-
         for dependent_id in dependents:
             if dependent_id not in local_dependents and dependent_id != head:
                 new_feat_vec = []
@@ -338,5 +396,4 @@ def complete_graph(graph, feat_map, rev_feat_map):  # completes a graph (every n
                     new_feat_vec.append(feat_map["hform,bpos,dform:" + hform + "," + bpos + "," + dform])
 
                 complete_g = add_sparse_arc(complete_g, head, dependent_id, new_feat_vec)
-
     return complete_g
