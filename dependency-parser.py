@@ -1,8 +1,6 @@
 # !/bin/python
 #  -*- coding: utf-8 -*-
 
-import profile
-
 import time
 import os
 import codecs
@@ -130,8 +128,8 @@ def train(args):
             weight_vector, correct, errors = structured_perceptron(deepcopy(sparse_graphs[graph_id]), feat_map, rev_feat_map, weight_vector, correct, errors, "train", alpha)
             total += 1
             if total % 500 == 0:
-                print "\t\t\tInstance Nr. " + str(total) + ", Correct: " + str(correct) + " (" \
-                    + str((correct*100)/total) + "%), Errors: " + str(errors)
+                print "\t\t\tInstance Nr. " + str(total) + "\tCorrect: " + str(correct) + "\t(" \
+                    + str((correct*100)/total) + "%)\tErrors: " + str(errors)
                 # print "\t\t\tCurrent weight vector:"
                 # print "\t\t\t" + str(weight_vector)
 
@@ -196,7 +194,7 @@ def test(args):
 
         total += 1
         if total % 500 == 0:
-            print "\t\tInstance Nr. " + str(total) + ", Errors: " + str(errors)
+            print "\t\tInstance Nr. " + str(total) + "\tErrors: " + str(errors)
             # print "\t\t\tCurrent weight vector:"
             # print "\t\t\t" + str(weight_vector)
     stop = time.time()
@@ -236,7 +234,7 @@ if __name__ == '__main__':
     else:
         if arguments.train:
             print "Running in training mode\n"
-            profile.run(train(arguments))
+            train(arguments)
 
         elif arguments.test:
             print "Running in test mode\n"

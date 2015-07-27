@@ -40,9 +40,9 @@ class ManualSparseGraph:  # heads has the same structure as in the other graph c
         self.heads = {}
 
     def add_arc(self, head, arc):
-        if head in self.heads:
+        try:
             self.heads[head].append(arc)
-        else:
+        except KeyError:
             self.heads[head] = [arc]
 
 
@@ -50,16 +50,14 @@ class SparseGraph:  # sparse representation of a graph (keys: heads, values: Spa
     def __init__(self, tokens):
         self.heads = {0: []}
 
-        for token in tokens:
-            if int(token.head) == 0:
-                new_arc = SparseArc(0, token.id)
-                self.heads[0].append(new_arc)
+        for token in (token for token in tokens if token.head == 0):
+            new_arc = SparseArc(0, token.id)
+            self.heads[0].append(new_arc)
         for token1 in tokens:
             dependents = []
-            for token2 in tokens:
-                if token2.head == token1.id:
-                    new_arc = SparseArc(token1.id, token2.id)
-                    dependents.append(new_arc)
+            for token2 in (token2 for token2 in tokens if token2.head == token1.id):
+                new_arc = SparseArc(token1.id, token2.id)
+                dependents.append(new_arc)
             if dependents:
                 self.heads[int(token1.id)] = dependents
 
@@ -68,18 +66,16 @@ class FullGraph:  # full representation of a graph (keys: heads, values: FullArc
     def __init__(self, tokens):
         self.heads = {0: []}
 
-        for token in tokens:
-            if int(token.head) == 0:
-                new_arc = FullArc(0, token.id, "__ROOT__", token.form, "__NULL__", token.lemma, "__NULL__", \
-                                  token.pos, token.rel)
-                self.heads[0].append(new_arc)
+        for token in (token for token in tokens if token.head == 0):
+            new_arc = FullArc(0, token.id, "__ROOT__", token.form, "__NULL__", token.lemma, "__NULL__", \
+                              token.pos, token.rel)
+            self.heads[0].append(new_arc)
         for token1 in tokens:
             dependents = []
-            for token2 in tokens:
-                if token2.head == token1.id:
-                    new_arc = FullArc(token1.id, token2.id, token1.form, token2.form, token1.lemma, token2.lemma, \
-                                      token1.pos, token2.pos, token2.rel)
-                    dependents.append(new_arc)
+            for token2 in (token2 for token2 in tokens if token2.head == token1.id):
+                new_arc = FullArc(token1.id, token2.id, token1.form, token2.form, token1.lemma, token2.lemma, \
+                                  token1.pos, token2.pos, token2.rel)
+                dependents.append(new_arc)
             if dependents:
                 self.heads[int(token1.id)] = dependents
 
@@ -106,9 +102,9 @@ def reverse_head_graph(graph):  # reverses a normal graph to a graph where the d
     new_graph = {}
     for h_id in graph:
         for arc in graph[h_id]:
-            if arc.dependent in new_graph:
+            try:
                 new_graph[arc.dependent].append(arc)
-            else:
+            except KeyError:
                 new_graph[arc.dependent] = [arc]
     return new_graph
 
@@ -117,9 +113,9 @@ def reverse_dep_graph(graph):  # opposite of reverse_head_graph
     new_graph = {}
     for d_id in graph:
         for arc in graph[d_id]:
-            if arc.head in new_graph:
+            try:
                 new_graph[arc.head].append(arc)
-            else:
+            except KeyError:
                 new_graph[arc.head] = [arc]
     return new_graph
 
@@ -130,13 +126,13 @@ def highest_scoring_heads(graph):  # returns a graph where every dependent only 
 
     for dependent in rev_graph:
         for arc in rev_graph[dependent]:
-            if dependent in highest:
+            try:
                 if arc.score > highest[dependent][0].score:
                     highest[dependent] = [arc]
                 if arc.score == highest[dependent][0].score:
                     if arc.dependent < highest[dependent][0].dependent:
                         highest[dependent] = [arc]
-            else:
+            except KeyError:
                 highest[dependent] = [arc]
     return reverse_dep_graph(highest)
 
@@ -180,15 +176,13 @@ def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to fil
         out = open(out_file, "a")
         for dependent in sorted(rev.keys()):
             # without rel
-            print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" \
-                + rev[dependent][0].dependent_lemma + "\t" + rev[dependent][0].dependent_pos + "\t_\t_\t" \
-                + str(rev[dependent][0].head) + "\t" + "_" + "\t_\t_"
-
-            # with rel
-            # print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" + \
-            #   rev[dependent][0].].dependent_lemma + "\t" + rev[dependent][0].].dependent_pos + "\t_\t_\t" + str(rev[dependent][0].].head) + \
-            #       "\t" + rev[dependent][0].].rel + "\t_\t_"
-
+            print >> out, "%s\t%s\t%s\t%s\t_\t_\t%s\t_\t_\t_" % (
+                rev[dependent][0].dependent,
+                rev[dependent][0].dependent_form,
+                rev[dependent][0].dependent_lemma,
+                rev[dependent][0].dependent_pos,
+                rev[dependent][0].head
+                )
         print >> out, ""
         out.close()
 
@@ -196,9 +190,12 @@ def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to fil
         rev = reverse_head_graph(graph)
         out = open(out_file, "a")
         for dependent in sorted(rev.keys()):
-            print >> out, str(rev[dependent][0].dependent) + "\t" + rev[dependent][0].dependent_form + "\t" \
-                + rev[dependent][0].dependent_lemma + "\t" + rev[dependent][0].dependent_pos + "\t_\t_\t" \
-                + "-1" + "\t" + "__ERROR__" + "\t_\t_"
+            print >> out, "%s\t%s\t%s\t%s\t_\t_\t-1\t_\t_\t_" % (
+                rev[dependent][0].dependent,
+                rev[dependent][0].dependent_form,
+                rev[dependent][0].dependent_lemma,
+                rev[dependent][0].dependent_pos,
+                )
         print >> out, ""
         out.close()
 
@@ -224,14 +221,11 @@ def check_graph_sanity(predicted_graph, compare_graph={}):  # sanity check on gr
             if len(predicted_graph[head]) < 1:
                 sane = False
                 print "Root has no dependent"
-            """
-            elif len(predicted_graph[head]) > 1:
-                sane = False
-                print "Root has more than one dependent"
-            """
+
         elif len(predicted_graph[head]) < 1:
             sane = False
             print "A head has no dependent"
+
     if not root_found:
         sane = False
         print "No Root node found"
@@ -294,12 +288,12 @@ def check_graph_sanity(predicted_graph, compare_graph={}):  # sanity check on gr
 
 
 def add_sparse_arc(graph, head_id, dependent_id, feat_vec):  # used in complete_graph to add SparseArc objects to graph
-    if head_id in graph:
+    try:
         new_arc = SparseArc(head_id, dependent_id)
         if not feat_vec == []:
             new_arc.feat_vec = feat_vec
         graph[head_id].append(new_arc)
-    else:
+    except KeyError:
         new_arc = SparseArc(head_id, dependent_id)
         if not feat_vec == []:
             new_arc.feat_vec = feat_vec
@@ -314,18 +308,15 @@ def complete_sparse_graph(graph, feat_map,
     dependents = {}
     for head in graph:
         for arc in graph[head]:
-            if arc.dependent in dependents:
-                print "Error: One dependent has several heads."
-            else:
-                dependents[arc.dependent] = arc
+            dependents[arc.dependent] = arc
     for head in graph:
         local_dependents = []
         for arc in graph[head]:
             local_dependents.append(arc.dependent)
 
-            if head in complete_g:
+            try:
                 complete_g[head].append(arc)
-            else:
+            except KeyError:
                 complete_g[head] = [arc]
         for dependent_id in dependents:
             if dependent_id not in local_dependents and dependent_id != head:

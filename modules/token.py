@@ -7,11 +7,11 @@ class Token(object):
         entries = line.split('\t')
         if len(entries) != 10:
             print "Length not right."
-        self.id = entries[0]
+        self.id = int(entries[0])
         self.form = entries[1]
         self.lemma = entries[2]
         self.pos = entries[3]
-        self.head = entries[6]
+        self.head = int(entries[6])
         self.rel = entries[7].rstrip()
 
 def sentences(file_stream):
