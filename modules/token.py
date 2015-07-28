@@ -11,7 +11,10 @@ class Token(object):
         self.form = entries[1]
         self.lemma = entries[2]
         self.pos = entries[3]
-        self.head = int(entries[6])
+        if entries[6] == "_":  # happens for test data, in that case it can't be 'integered'
+            self.head = None
+        else:
+            self.head = int(entries[6])
         self.rel = entries[7].rstrip()
 
 def sentences(file_stream):

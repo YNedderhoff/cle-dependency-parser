@@ -90,7 +90,7 @@ class CompleteFullGraph:  # complete, full representation of a graph (keys: head
             self.heads[0].append(new_arc)
         for token1 in tokens:
             dependents = []
-            for token2 in (token2 for token2 in tokens if token2.head == token1.id):
+            for token2 in (token2 for token2 in tokens if token2.id != token1.id):
                 new_arc = FullArc(token1.id, token2.id, token1.form, token2.form, token1.lemma, token2.lemma, \
                                   token1.pos, token2.pos, token2.rel)
                 dependents.append(new_arc)
