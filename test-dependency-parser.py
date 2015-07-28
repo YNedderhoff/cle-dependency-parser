@@ -3,7 +3,7 @@ from modules.graphs import ManualSparseGraph, SparseArc, cycle, highest_scoring_
 
 from copy import deepcopy
 
-"""
+
 a = ManualSparseGraph()
 a.add_arc(0, SparseArc(0, 1, 10.0))
 a.add_arc(0, SparseArc(0, 2, 9.0))
@@ -46,7 +46,7 @@ for head in y:
     for arc in y[head]:
         print str(head) + " --> " + str(arc.dependent) + ", " + str(arc.score)
 print "--"
-
+"""
 c = ManualSparseGraph()
 c.add_arc(33, SparseArc(33, 32, 0))
 c.add_arc(4, SparseArc(4, 3, 0))
@@ -85,7 +85,7 @@ c.add_arc(28, SparseArc(28, 29, 0))
 c.add_arc(29, SparseArc(29, 30, 0))
 
 print cycle(c.heads)
-"""
+
 d = ManualSparseGraph()
 # d.add_arc(0, SparseArc(0, 7, 0))
 d.add_arc(16, SparseArc(16, 1, 0))
@@ -113,3 +113,4 @@ d.add_arc(20, SparseArc(20, 16, 0))
 d.add_arc(7, SparseArc(7, 22, 0))
 
 print cycle(d.heads)
+"""

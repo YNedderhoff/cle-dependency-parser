@@ -8,7 +8,7 @@ def fm (infile):
     for sentence in sentences(codecs.open(infile,encoding='utf-8')):
         local_features=[]
         for token1 in sentence:
-            if int(token1.head) == 0:
+            if token1.head == 0:
                 # at this point ROOT is the head and token1 is the dependent
                 
                 # unigram features

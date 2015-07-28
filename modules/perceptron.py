@@ -42,6 +42,7 @@ def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct,
             errors += 1
 
         if make_graph_compareable(y_predicted) == make_graph_compareable(y_gold):
+            print "yes"
             if tmp_errors < errors:
                 print "Correct but error, this is not possible"
             correct +=1

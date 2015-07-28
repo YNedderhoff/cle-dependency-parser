@@ -3,8 +3,8 @@ from copy import deepcopy
 
 class SparseArc:  # sparse representation of an arc
     def __init__(self, head, dependent, s=0.0):
-        self.head = int(head)
-        self.dependent = int(dependent)
+        self.head = head
+        self.dependent = dependent
         self.score = s
         self.feat_vec = []
 
@@ -15,8 +15,8 @@ class SparseArc:  # sparse representation of an arc
 class FullArc:  # full representation of an arc
     def __init__(self, head, dependent, head_form, dependent_form, head_lemma, dependent_lemma, head_pos,
                  dependent_pos, dependent_rel, s=0.0):
-        self.head = int(head)
-        self.dependent = int(dependent)
+        self.head = head
+        self.dependent = dependent
         self.score = s
         self.feat_vec = []
 
@@ -59,7 +59,7 @@ class SparseGraph:  # sparse representation of a graph (keys: heads, values: Spa
                 new_arc = SparseArc(token1.id, token2.id)
                 dependents.append(new_arc)
             if dependents:
-                self.heads[int(token1.id)] = dependents
+                self.heads[token1.id] = dependents
 
 
 class FullGraph:  # full representation of a graph (keys: heads, values: FullArc objects)
@@ -77,7 +77,7 @@ class FullGraph:  # full representation of a graph (keys: heads, values: FullArc
                                   token1.pos, token2.pos, token2.rel)
                 dependents.append(new_arc)
             if dependents:
-                self.heads[int(token1.id)] = dependents
+                self.heads[token1.id] = dependents
 
 
 class CompleteFullGraph:  # complete, full representation of a graph (keys: heads, values: FullArc objects)
@@ -90,12 +90,12 @@ class CompleteFullGraph:  # complete, full representation of a graph (keys: head
             self.heads[0].append(new_arc)
         for token1 in tokens:
             dependents = []
-            for token2 in tokens:
+            for token2 in (token2 for token2 in tokens if token2.head == token1.id):
                 new_arc = FullArc(token1.id, token2.id, token1.form, token2.form, token1.lemma, token2.lemma, \
                                   token1.pos, token2.pos, token2.rel)
                 dependents.append(new_arc)
             if dependents:
-                self.heads[int(token1.id)] = dependents
+                self.heads[token1.id] = dependents
 
 
 def reverse_head_graph(graph):  # reverses a normal graph to a graph where the dependents are the keys

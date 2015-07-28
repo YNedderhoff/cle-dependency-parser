@@ -41,7 +41,6 @@ def save(file_name, model):
 
 
 def train(args):
-
     start = time.time()
     print "\tCreating feature map..."
 
@@ -90,7 +89,7 @@ def train(args):
         for head in sparse_graph:
             for arc in sparse_graph[head]:
                 if arc.feat_vec:
-                    if int(arc.head) == 0:
+                    if arc.head == 0:
                         if len(arc.feat_vec) != 10:
                             print "Length of arc feature vector is wrong."
                             print arc.feat_vec
@@ -150,7 +149,6 @@ def train(args):
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
 
-
 def test(args):
 
     # load classifier vectors (model) and feature vector from file:
@@ -199,11 +197,6 @@ def test(args):
             # print "\t\t\t" + str(weight_vector)
     stop = time.time()
     print "\t\tDone, " + str(stop - start) + " sec"
-
-def write_to_file(token, file_obj):
-    print >> file_obj, str(token.id) + "\t" + str(token.form) + "\t" + str(token.lemma) + "\t" + str(
-        token.pos) + "\t" + "_" + "\t" + "_" + "\t" + str(token.head) + "\t" + str(token.rel) + "\t" + "_" + "\t" + "_"
-
 
 if __name__ == '__main__':
 
