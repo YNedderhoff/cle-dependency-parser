@@ -1,5 +1,4 @@
 class Token(object):
-
     # A non-empty line in CoNLL06 format
 
     def __init__(self, line):
@@ -17,8 +16,8 @@ class Token(object):
             self.head = int(entries[6])
         self.rel = entries[7].rstrip()
 
-def sentences(file_stream):
 
+def sentences(file_stream):
     # Generator that returns sentences as lists of Token objects.
     # Reads CoNLL06 format.
 
@@ -32,4 +31,3 @@ def sentences(file_stream):
             sentence = []
     if sentence:
         yield sentence
-

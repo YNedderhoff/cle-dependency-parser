@@ -1,21 +1,17 @@
 from modules.cle import chu_liu_edmonds
-from modules.graphs import ManualSparseGraph, SparseArc, cycle, highest_scoring_heads
-
-from copy import deepcopy
-
+from modules.graphs import ManualSparseGraph, Arc
+import profile
 
 a = ManualSparseGraph()
-a.add_arc(0, SparseArc(0, 1, 10.0))
-a.add_arc(0, SparseArc(0, 2, 9.0))
-a.add_arc(0, SparseArc(0, 3, 9.0))
-a.add_arc(1, SparseArc(1, 2, 30.0))
-a.add_arc(1, SparseArc(1, 3, 30.0))
-a.add_arc(2, SparseArc(2, 1, 20.0))
-a.add_arc(2, SparseArc(2, 3, 3.0))
-a.add_arc(3, SparseArc(3, 1, 0.0))
-a.add_arc(3, SparseArc(3, 2, 11.0))
-
-
+a.add_arc(0, Arc("sparse", 0, 1, None, None, None, None, None, None, None, 10.0))
+a.add_arc(0, Arc("sparse", 0, 2, None, None, None, None, None, None, None, 9.0))
+a.add_arc(0, Arc("sparse", 0, 3, None, None, None, None, None, None, None, 9.0))
+a.add_arc(1, Arc("sparse", 1, 2, None, None, None, None, None, None, None, 30.0))
+a.add_arc(1, Arc("sparse", 1, 3, None, None, None, None, None, None, None, 30.0))
+a.add_arc(2, Arc("sparse", 2, 1, None, None, None, None, None, None, None, 20.0))
+a.add_arc(2, Arc("sparse", 2, 3, None, None, None, None, None, None, None, 3.0))
+a.add_arc(3, Arc("sparse", 3, 1, None, None, None, None, None, None, None, 0.0))
+a.add_arc(3, Arc("sparse", 3, 2, None, None, None, None, None, None, None, 11.0))
 
 y = chu_liu_edmonds(a.heads)
 
@@ -26,17 +22,16 @@ for head in y:
         print str(head) + " --> " + str(arc.dependent) + ", " + str(arc.score)
 print "--"
 
-
 b = ManualSparseGraph()
-b.add_arc(0, SparseArc(0, 1, 10.0))
-b.add_arc(0, SparseArc(0, 2, 5.0))
-b.add_arc(0, SparseArc(0, 3, 15.0))
-b.add_arc(1, SparseArc(1, 2, 20.0))
-b.add_arc(1, SparseArc(1, 3, 15.0))
-b.add_arc(2, SparseArc(2, 1, 25.0))
-b.add_arc(2, SparseArc(2, 3, 25.0))
-b.add_arc(3, SparseArc(3, 1, 30.0))
-b.add_arc(3, SparseArc(3, 2, 10.0))
+b.add_arc(0, Arc("sparse", 0, 1, None, None, None, None, None, None, None, 10.0))
+b.add_arc(0, Arc("sparse", 0, 2, None, None, None, None, None, None, None, 5.0))
+b.add_arc(0, Arc("sparse", 0, 3, None, None, None, None, None, None, None, 15.0))
+b.add_arc(1, Arc("sparse", 1, 2, None, None, None, None, None, None, None, 20.0))
+b.add_arc(1, Arc("sparse", 1, 3, None, None, None, None, None, None, None, 15.0))
+b.add_arc(2, Arc("sparse", 2, 1, None, None, None, None, None, None, None, 25.0))
+b.add_arc(2, Arc("sparse", 2, 3, None, None, None, None, None, None, None, 25.0))
+b.add_arc(3, Arc("sparse", 3, 1, None, None, None, None, None, None, None, 30.0))
+b.add_arc(3, Arc("sparse", 3, 2, None, None, None, None, None, None, None, 10.0))
 
 y = chu_liu_edmonds(b.heads)
 

@@ -1,86 +1,66 @@
-from scoring import score
-from graphs import complete_sparse_graph, check_graph_sanity
+from graphs import check_graph_sanity, make_graph_compareable
 from cle import chu_liu_edmonds
+import time
 
-def sum_of_arc_feature_vectors(graph, l):
-    # returns the added feature vectors of every arc
-    sum_of_feat_vecs = []
-    for i in range(l):
-        sum_of_feat_vecs.append(0)
+def sum_of_arc_feature_vectors(graph):
+
+    # adds up the feature vectors of every arc of the graph. Returns it in a sparse representation:
+    # {<index in feat_map>: <sum>}
+
+    sum_of_feat_vecs = {}
     for head in graph:
         for arc in graph[head]:
             for feature in arc.feat_vec:
-                sum_of_feat_vecs[feature] += 1
+                try:
+                    sum_of_feat_vecs[feature] += 1
+                except KeyError:
+                    sum_of_feat_vecs[feature] = 1
     return sum_of_feat_vecs
 
-def make_graph_compareable(graph):
-    graph_dict = {}
-    for head in sorted(graph.keys()):
-        tmp_arcs = []
-        for arc in graph[head]:
-            tmp_arcs.append(arc.dependent)
-        graph_dict[head] = sorted(tmp_arcs)
-    return graph_dict
-
-def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct, errors, mode, alpha=0.5):
+def structured_perceptron(complete_graph, weight_vector, correct, errors, mode, sparse_graph, alpha=0.5):
 
     if mode == "train":
 
-        y_gold = graph  # the correct tree
-        g = complete_sparse_graph(graph, feat_map, rev_feat_map)  # the complete, directed graph
-        g_scored = score(g, weight_vector)  # the scored, complete, directed graph
-
-        tmp_errors = errors
+        # try to make a prediction. if a KeyError occurs or the result is not in reasonable format, an error is counted.
 
         try:
-            y_predicted = chu_liu_edmonds(g_scored)
 
-            if not check_graph_sanity(y_predicted, y_gold):
+            y_predicted = chu_liu_edmonds(complete_graph)
+
+            if not check_graph_sanity(y_predicted, complete_graph):
                 errors += 1
 
         except KeyError:
+            y_predicted = {}
             errors += 1
 
-        if make_graph_compareable(y_predicted) == make_graph_compareable(y_gold):
-            if tmp_errors < errors:
-                print "Correct but error, this is not possible"
-            correct +=1
+        # if the prediction matches the gold graph: return, else: adjust weight vector
 
+        if make_graph_compareable(y_predicted) == make_graph_compareable(sparse_graph):
+
+            correct += 1
             return weight_vector, correct, errors
+
         else:
+            tmp1 = sum_of_arc_feature_vectors(sparse_graph)
+            tmp2 = sum_of_arc_feature_vectors(y_predicted)
 
-            tmp1 = sum_of_arc_feature_vectors(y_gold, len(weight_vector))
-            tmp2 = sum_of_arc_feature_vectors(y_predicted, len(weight_vector))
-
-            tmp3 = []
-            for i in range(len(weight_vector)):
-                tmp3.append(tmp1[i] - tmp2[i])
-
-            tmp4 = []
-            for i in range(len(weight_vector)):
-                tmp4.append(tmp3[i] * alpha)
-
-            w_new = []
-            for i in range(len(weight_vector)):
-                w_new.append(weight_vector[i] + tmp4[i])
-
-            if len(w_new) != len(weight_vector):
-                print "The new weight vector has not the same length as the old one."
-
-            weight_vector = w_new
+            for i in (i for i in tmp1 if i in tmp2):
+                weight_vector[i] += alpha * (tmp1[i] - tmp2[i])
+            for i in (i for i in tmp1 if i not in tmp2):
+                weight_vector[i] += (alpha * tmp1[i])
+            for i in (i for i in tmp2 if i not in tmp1):
+                weight_vector[i] += (alpha * (0 - tmp2[i]))
 
             return weight_vector, correct, errors
-
-        # adjust weights, return weight vector
 
     elif mode == "test":
 
-        g_scored = score(graph, weight_vector)  # the scored, complete, directed graph
-
         try:
-            y_predicted = chu_liu_edmonds(g_scored)
 
-            if not check_graph_sanity(y_predicted, graph):
+            y_predicted = chu_liu_edmonds(complete_graph)
+
+            if not check_graph_sanity(y_predicted, complete_graph):
                 print "sanity check not passed."
                 errors += 1
                 y_predicted = {}
@@ -91,7 +71,6 @@ def structured_perceptron(graph, feat_map, rev_feat_map, weight_vector, correct,
             y_predicted = {}
 
         return y_predicted, errors
-        # write prediction into file
 
     else:
 

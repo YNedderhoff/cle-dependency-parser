@@ -1,148 +1,76 @@
 from token import sentences
 import codecs
 
-def fm (infile):
+def give_features(hform, hlemma, hpos, dform, dlemma, dpos, bpos):
+
+    # generator that yields features based on the following information:
+
+    # 1 = hform
+    # 2 = hpos
+    # 3 = dform
+    # 4 = dpos
+    # 5 = bpos
+    # 6 = hlemma
+    # 7 = dlemma
+
+    yield "1:%s" % hform
+    yield "2:%s" % hpos
+    yield "3:%s" % dform,
+    yield "4:%s" % dpos
+    yield "6:%s" % hlemma
+    yield "7:%s" % dlemma
+    yield "5:%s" % bpos
+
+    yield "1,4:%s,%s" % (hform, dpos)
+    yield "2,3:%s,%s" % (hpos, dform)
+    yield "1,2:%s,%s" % (hform, hpos)
+    yield "3,4:%s,%s" % (dform, dpos)
+    yield "1,3:%s,%s" % (hform, dform)
+    yield "2,4:%s,%s" % (hpos, dpos)
+    yield "6,4:%s,%s" % (hlemma, dpos)
+    yield "2,7:%s,%s" % (hpos, dlemma)
+    yield "6,2:%s,%s" % (hlemma, hpos)
+    yield "7,4:%s,%s" % (dlemma, dpos)
+    yield "6,7:%s,%s" % (hlemma, dlemma)
+
+    yield "1,2,3,4:%s,%s,%s,%s" % (hform, hpos, dform, dpos)
+    yield "2,3,4:%s,%s,%s" % (hpos, dform, dpos)
+    yield "1,3,4:%s,%s,%s" % (hform, dform, dpos)
+    yield "1,2,3:%s,%s,%s" % (hform, hpos, dform)
+    yield "1,2,4:%s,%s,%s" % (hform, hpos, dpos)
+    yield "2,5,4:%s,%s,%s" % (hpos, bpos, dpos)
+    yield "2,5,3:%s,%s,%s" % (hpos, bpos, dform)
+    yield "1,5,4:%s,%s,%s" % (hform, bpos, dpos)
+    yield "1,5,3:%s,%s,%s" % (hform, bpos, dform)
+
+    yield "6,2,7,4:%s,%s,%s,%s" % (hlemma, hpos, dlemma, dpos)
+    yield "2,7,4:%s,%s,%s" % (hpos, dlemma, dpos)
+    yield "6,7,4:%s,%s,%s" % (hlemma, dlemma, dpos)
+    yield "6,2,7:%s,%s,%s" % (hlemma, hpos, dlemma)
+    yield "6,2,4:%s,%s,%s" % (hlemma, hpos, dpos)
+    yield "2,5,7:%s,%s,%s" % (hpos, bpos, dlemma)
+    yield "6,5,4:%s,%s,%s" % (hlemma, bpos, dpos)
+    yield "6,5,7:%s,%s,%s" % (hlemma, bpos, dlemma)
+
+
+def fm(infile):
     # takes a file in conll09 format, returns a feature map
     feat_map = {}  # featmap as dictionary {feature:index}
     index = 0  # index in featmap
-    for sentence in sentences(codecs.open(infile,encoding='utf-8')):
-        local_features=[]
+    for sentence in sentences(codecs.open(infile, encoding='utf-8')):
         for token1 in sentence:
-            if token1.head == 0:
-                # at this point ROOT is the head and token1 is the dependent
-                
-                # unigram features
-                local_features.append("hform:__ROOT__")
-                local_features.append("dform:"+token1.form)
-                local_features.append("dpos:"+token1.pos)
-                local_features.append("hform,dpos:"+"__ROOT__"+","+token1.pos)
-                local_features.append("dform,dpos:"+token1.form+","+token1.pos)
-                local_features.append("bpos:"+token1.rel)
 
-                # bigram features
-                local_features.append("hform,dform,dpos:"+"__ROOT__"+","+token1.form+","+token1.pos)
-                local_features.append("hform,dform:"+"__ROOT__"+","+token1.form)
+            # add root features
+            for feature in give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form, token1.lemma, token1.pos, token1.rel):
+                if feature not in feat_map:
+                    feat_map[feature] = index
+                    index += 1
 
-                # other
-                local_features.append("hform,bpos,dpos:"+"__ROOT__"+","+token1.rel+","+token1.pos)
-                local_features.append("hform,bpos,dform:"+"__ROOT__"+","+token1.rel+","+token1.form)
-        for token1 in sentence:
+            # add other features
             for token2 in sentence:
-                if token2.head == token1.id:
-                    # at this point, token1 is the head, and token2 the dependent
+                for feature in give_features(token1.form, token1.lemma, token1.pos, token2.form, token2.lemma, token2.pos, token2.rel):
+                    if feature not in feat_map:
+                        feat_map[feature] = index
+                        index += 1
 
-                    # unigram features
-                    local_features.append("hform:"+token1.form)
-                    local_features.append("hpos:"+token1.pos)
-                    local_features.append("dform:"+token2.form)
-                    local_features.append("dpos:"+token2.pos)
-                    local_features.append("hform,dpos:"+token1.form+","+token2.pos)
-                    local_features.append("hpos,dform:"+token1.pos+","+token2.form)
-                    local_features.append("hform,hpos:"+token1.form+","+token1.pos)
-                    local_features.append("dform,dpos:"+token2.form+","+token2.pos)
-                    local_features.append("bpos:"+token2.rel)
-
-                    # bigram features
-                    local_features.append("hform,hpos,dform,dpos:"+token1.form+","+token1.pos+","+token2.form+","+token2.pos)
-                    local_features.append("hpos,dform,dpos:"+token1.pos+","+token2.form+","+token2.pos)
-                    local_features.append("hform,dform,dpos:"+token1.form+","+token2.form+","+token2.pos)
-                    local_features.append("hform,hpos,dform:"+token1.form+","+token1.pos+","+token2.form)
-                    local_features.append("hform,hpos,dpos:"+token1.form+","+token1.pos+","+token2.pos)
-                    local_features.append("hform,dform:"+token1.form+","+token2.form)
-                    local_features.append("hpos,dpos:"+token1.pos+","+token2.pos)
-
-                    # other
-                    local_features.append("hpos,bpos,dpos:"+token1.pos+","+token2.rel+","+token2.pos)
-                    local_features.append("hpos,bpos,dform:"+token1.pos+","+token2.rel+","+token2.form)
-                    local_features.append("hform,bpos,dpos:"+token1.form+","+token2.rel+","+token2.pos)
-                    local_features.append("hform,bpos,dform:"+token1.form+","+token2.rel+","+token2.form)
-        for feature in local_features:
-            if not feature in feat_map:
-                feat_map[feature]=index
-                index += 1
     return feat_map
-
-def add_feat_vec_to_sparse_graph(full_graph, sparse_graph, feat_map):
-
-    for head in full_graph:
-        for full_arc in full_graph[head]:
-
-            feat_v = fill_feat_vec(full_arc, feat_map)
-
-            for sparse_arc in sparse_graph[head]:
-                if sparse_arc.dependent == full_arc.dependent:
-                    sparse_arc.feat_vec = feat_v
-
-    return sparse_graph
-
-def add_feat_vec_to_full_graph(full_graph, feat_map):
-    for head in full_graph:
-        for full_arc in full_graph[head]:
-
-            full_arc.feat_vec = fill_feat_vec(full_arc, feat_map)
-
-    return full_graph
-
-def reverse_feat_map(feat_map):
-    rev_feat_map = {}
-    for feature in feat_map:
-        rev_feat_map[feat_map[feature]] = feature
-    return rev_feat_map
-
-
-def fill_feat_vec(arc, feat_map):
-
-    # checks for the arc if the features are in the feature representation and returns it's feature vector
-
-    feat_v = []
-
-    # unigram features
-
-    if "hform:"+arc.head_form in feat_map:
-        feat_v.append(feat_map["hform:"+arc.head_form])
-    if "hpos:"+arc.head_pos in feat_map:
-        feat_v.append(feat_map["hpos:"+arc.head_pos])
-    if "dform:"+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["dform:"+arc.dependent_form])
-    if "dpos:"+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["dpos:"+arc.dependent_pos])
-    if "hform,dpos:"+arc.head_form+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hform,dpos:"+arc.head_form+","+arc.dependent_pos])
-    if "hpos,dform:"+arc.head_pos+","+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["hpos,dform:"+arc.head_pos+","+arc.dependent_form])
-    if "hform,hpos:"+arc.head_form+","+arc.head_pos in feat_map:
-        feat_v.append(feat_map["hform,hpos:"+arc.head_form+","+arc.head_pos])
-    if "dform,dpos:"+arc.dependent_form+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["dform,dpos:"+arc.dependent_form+","+arc.dependent_pos])
-    if "bpos:"+arc.rel in feat_map:
-        feat_v.append(feat_map["bpos:"+arc.rel])
-
-    # bigram features
-
-    if "hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hform,hpos,dform,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos])
-    if "hpos,dform,dpos:"+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hpos,dform,dpos:"+arc.head_pos+","+arc.dependent_form+","+arc.dependent_pos])
-    if "hform,dform,dpos:"+arc.head_form+","+arc.dependent_form+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hform,dform,dpos:"+arc.head_form+","+arc.dependent_form+","+arc.dependent_pos])
-    if "hform,hpos,dform:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["hform,hpos,dform:"+arc.head_form+","+arc.head_pos+","+arc.dependent_form])
-    if "hform,hpos,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hform,hpos,dpos:"+arc.head_form+","+arc.head_pos+","+arc.dependent_pos])
-    if "hform,dform:"+arc.head_form+","+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["hform,dform:"+arc.head_form+","+arc.dependent_form])
-    if "hpos,dpos:"+arc.head_pos+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hpos,dpos:"+arc.head_pos+","+arc.dependent_pos])
-
-    # other
-    
-    if "hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hpos,bpos,dpos:"+arc.head_pos+","+arc.rel+","+arc.dependent_pos])
-    if "hpos,bpos,dform:"+arc.head_pos+","+arc.rel+","+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["hpos,bpos,dform:"+arc.head_pos+","+arc.rel+","+arc.dependent_form])
-    if "hform,bpos,dpos:"+arc.head_form+","+arc.rel+","+arc.dependent_pos in feat_map:
-        feat_v.append(feat_map["hform,bpos,dpos:"+arc.head_form+","+arc.rel+","+arc.dependent_pos])
-    if "hform,bpos,dform:"+arc.head_form+","+arc.rel+","+arc.dependent_form in feat_map:
-        feat_v.append(feat_map["hform,bpos,dform:"+arc.head_form+","+arc.rel+","+arc.dependent_form])
-
-    return feat_v

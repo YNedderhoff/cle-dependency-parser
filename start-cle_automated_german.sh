@@ -2,9 +2,9 @@
 
 CORPORA="../dependency-parsing-files/data/german"
 
-MODELS="models"
-PREDICTIONS="predictions"
-EVALUATIONS="evaluations"
+MODELS="models/german"
+PREDICTIONS="predictions/german"
+EVALUATIONS="evaluations/german"
 
 #train
 python -u dependency-parser.py -train -i ${CORPORA}/train/tiger-2.2.train.conll06 -m ${MODELS}/$2 -e $1 $5 $6
