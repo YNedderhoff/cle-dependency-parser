@@ -198,7 +198,9 @@ if __name__ == '__main__':
 
     if os.stat(arguments.in_file).st_size == 0:
         print "Input file is empty"
+
     else:
+
         if arguments.train:
             print "Running in training mode\n"
             train(arguments)
@@ -211,13 +213,6 @@ if __name__ == '__main__':
         elif arguments.evaluate:
             print "Running in evaluation mode\n"
             evaluate(arguments)
-
-        """
-        elif arguments.tag:
-            print "Running in tag mode\n"
-            t.tag(arguments.in_file, arguments.model, arguments.output_file)
-
-        """
 
     t1 = time.time()
     print "\n\tDone. Total time: " + str(t1 - t0) + " sec.\n"

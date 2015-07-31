@@ -29,7 +29,6 @@ def evaluate(args):
         print "Error in file length, Gold: " + str(len(full_graphs_gold)) + ", Predicted: " + str(
             len(full_graphs_predicted))
 
-    out = open(args.out_file, "w")
-    print >> out, "Total: " + str(total)
-    print >> out, "Correct: " + str(correct)
-    out.close()
+    with open(args.out_file, "w") as out:
+        print >> out, "Total: " + str(total)
+        print >> out, "Correct: " + str(correct)

@@ -43,8 +43,8 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
         self.heads = {0: []}
 
         # In every possible mode (sparse, complete-sparse, full, complete-full) at first the arcs with ROOT head are
-        # added, then every other arc. Every arc gets a sparse feature vector based on feat_map and in the completed
-        # graphs a score (based on the features and the weight vector).
+        # added, then every other arc. Every arc, except ones in the  full graph, gets a sparse feature vector based
+        # on feat_map. The completed graphs also get a score per arc (based on the features and the weight vector).
 
         # sparse arc representation
         if mode == "sparse":
@@ -212,31 +212,29 @@ def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to fil
     if mode == "normal":
 
         rev = reverse_head_graph(graph)
-        out = codecs.open(out_file, "a", "utf-8")
-        for dependent in sorted(rev):
-            # without rel
-            print >> out, "%s\t%s\t%s\t%s\t_\t_\t%s\t_\t_\t_" % (
-                rev[dependent][0].dependent,
-                rev[dependent][0].dependent_form,
-                rev[dependent][0].dependent_lemma,
-                rev[dependent][0].dependent_pos,
-                rev[dependent][0].head
-            )
-        print >> out, ""
-        out.close()
+        with codecs.open(out_file, "a", "utf-8") as out:
+            for dependent in sorted(rev):
+                # without rel
+                print >> out, "{0}\t{1}\t{2}\t{3}\t_\t_\t{4}\t_\t_\t_".format(
+                    rev[dependent][0].dependent,
+                    rev[dependent][0].dependent_form,
+                    rev[dependent][0].dependent_lemma,
+                    rev[dependent][0].dependent_pos,
+                    rev[dependent][0].head
+                )
+            print >> out, ""
 
     elif mode == "error":
         rev = reverse_head_graph(graph)
-        out = codecs.open(out_file, "a", "utf-8")
-        for dependent in sorted(rev):
-            print >> out, "%s\t%s\t%s\t%s\t_\t_\t-1\t_\t_\t_" % (
-                rev[dependent][0].dependent,
-                rev[dependent][0].dependent_form,
-                rev[dependent][0].dependent_lemma,
-                rev[dependent][0].dependent_pos,
-            )
-        print >> out, ""
-        out.close()
+        with codecs.open(out_file, "a", "utf-8") as out:
+            for dependent in sorted(rev):
+                print >> out, "{0}\t{1}\t{2}\t{3}\t_\t_\t-1\t_\t_\t_".format(
+                    rev[dependent][0].dependent,
+                    rev[dependent][0].dependent_form,
+                    rev[dependent][0].dependent_lemma,
+                    rev[dependent][0].dependent_pos,
+                )
+            print >> out, ""
 
 
 def check_graph_sanity(predicted_graph, compare_graph):  # sanity check on graph
@@ -257,11 +255,11 @@ def check_graph_sanity(predicted_graph, compare_graph):  # sanity check on graph
         if head == 0:
             root_found = True
 
-            if len(predicted_graph[head]) < 1:
+            if not predicted_graph[head]:
                 sane = False
                 print "Root has no dependent"
 
-        elif len(predicted_graph[head]) < 1:
+        elif not predicted_graph[head]:
             sane = False
             print "A head has no dependent"
 
