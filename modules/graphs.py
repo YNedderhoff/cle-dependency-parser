@@ -47,7 +47,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
         # on feat_map. The completed graphs also get a score per arc (based on the features and the weight vector).
 
         # normal graph
-        if mode == "sparse" or mode == "full":
+        if mode in ["sparse", "full"]:
             for token1 in tokens:
                 # add arc from root to it's dependent
                 if token1.head == 0:
@@ -80,7 +80,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                     self.heads[token1.id] = dependents
 
         # completed graph
-        elif mode == "complete-sparse" or "complete-full":
+        elif mode in ["complete-sparse", "complete-full"]:
             for token1 in tokens:
 
                 # add arcs from root to every node
