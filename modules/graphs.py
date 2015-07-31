@@ -215,7 +215,7 @@ def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to fil
         with codecs.open(out_file, "a", "utf-8") as out:
             for dependent in sorted(rev):
                 # without rel
-                print >> out, "{0}\t{1}\t{2}\t{3}\t_\t_\t{4}\t_\t_\t_".format(
+                print >> out, u"{0}\t{1}\t{2}\t{3}\t_\t_\t{4}\t_\t_\t_".format(
                     rev[dependent][0].dependent,
                     rev[dependent][0].dependent_form,
                     rev[dependent][0].dependent_lemma,
@@ -228,7 +228,7 @@ def write_graph_to_file(graph, out_file, mode="normal"):  # write a graph to fil
         rev = reverse_head_graph(graph)
         with codecs.open(out_file, "a", "utf-8") as out:
             for dependent in sorted(rev):
-                print >> out, "{0}\t{1}\t{2}\t{3}\t_\t_\t-1\t_\t_\t_".format(
+                print >> out, u"{0}\t{1}\t{2}\t{3}\t_\t_\t-1\t_\t_\t_".format(
                     rev[dependent][0].dependent,
                     rev[dependent][0].dependent_form,
                     rev[dependent][0].dependent_lemma,
