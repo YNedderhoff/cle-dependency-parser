@@ -1,8 +1,6 @@
 # !/bin/python
 #  -*- coding: utf-8 -*-
 
-import cProfile
-
 import time
 import os
 import codecs
@@ -33,7 +31,6 @@ def save(file_name, model):
 
 
 def train(args):
-
     print "\tCreating feature map..."
     start = time.time()
 
@@ -76,9 +73,12 @@ def train(args):
 
         print "\t\tEpoch: " + str(epoch) + ", Smoothing coefficient: " + str(alpha)
 
-        total = 0
-        correct = 0
+        total = 0.0
+        correct = 0.0
         errors = 0
+
+        correct_arcs = 0.0
+        total_arcs = 0.0
 
         for sentence in sentences(codecs.open(args.in_file, encoding='utf-8')):
 
@@ -86,16 +86,20 @@ def train(args):
             complete_sparse_graph = Graph(sentence, "complete-sparse", feat_map, weight_vector).heads  # complete graph
 
             # call the perceptron
-            weight_vector, correct, errors = structured_perceptron(complete_sparse_graph, weight_vector, correct,
-                                                                   errors, "train", sparse_graph, alpha)
+            weight_vector, correct, errors, correct_arcs, total_arcs = structured_perceptron(complete_sparse_graph,
+                                                                                             weight_vector, correct,
+                                                                                             errors, correct_arcs,
+                                                                                             total_arcs, "train",
+                                                                                             sparse_graph, alpha)
 
             total += 1
 
             # print some information every 500 sentences
             if total % 500 == 0:
                 stop2 = time.time()
-                print "\t\t\tInstance Nr. " + str(total) + "\tCorrect: " + str(correct) + "\t(" \
-                      + str((correct * 100) / total) + "%)\tErrors: " + str(errors) + "\t" + str(stop2-start2) + " sec"
+                print "\t\t\tInstance Nr. {0}\tCorrect sentences: {1}\t({2}%)\tUAS: {3}%\tErrors: {4}\t{5} sec".format(
+                    total, correct, round((correct / total) * 100, 2), round((correct_arcs / total_arcs) * 100, 2),
+                    errors, round(stop2 - start2, 2))
                 start2 = time.time()
 
         # decrease alpha after every epoch if activated
@@ -115,7 +119,6 @@ def train(args):
 
 
 def test(args):
-
     # load classifier vectors (model) and feature vector from file:
     print "\tLoading the model and the features from file '" + str(args.model) + "'"
     start = time.time()
@@ -152,7 +155,7 @@ def test(args):
         tmp_errors = errors
 
         # call the perceptron
-        predicted_graph, errors = structured_perceptron(full_graph, weight_vector, 0, errors, "test", None)
+        predicted_graph, errors = structured_perceptron(full_graph, weight_vector, 0, errors, None, None, "test", None)
 
         if tmp_errors == errors:  # no error occured during prediction
             write_graph_to_file(predicted_graph, args.out_file)

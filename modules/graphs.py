@@ -1,4 +1,4 @@
-from featmap import give_features
+from featmap import give_features, give_distance, give_direction
 import codecs
 
 
@@ -47,34 +47,32 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
         # on feat_map. The completed graphs also get a score per arc (based on the features and the weight vector).
 
         # normal graph
-        if mode in ["sparse", "full"]:
+        if mode == "sparse":
             for token1 in tokens:
+
                 # add arc from root to it's dependent
                 if token1.head == 0:
-                    if mode == "sparse":
-                        new_arc = Arc("sparse", 0, token1.id)
-                        new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
-                                                        give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form,
-                                                                      token1.lemma, token1.pos, token1.rel) if
-                                                        feature in feat_map)]
-                    else:
-                        new_arc = Arc("full", 0, token1.id, "__ROOT__", token1.form, "__ROOT__", token1.lemma,
-                                      "__ROOT__",
-                                      token1.pos, token1.rel)
+                    direction = "left"
+                    distance = give_distance(0, token1.id, direction)
+
+                    new_arc = Arc("sparse", 0, token1.id)
+                    new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
+                                                    give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form,
+                                                                  token1.lemma, token1.pos, token1.rel, direction,
+                                                                  distance) if feature in feat_map)]
                     self.heads[0].append(new_arc)
 
                 # add every other arc
                 dependents = []
                 for token2 in (token2 for token2 in tokens if token2.head == token1.id):
-                    if mode == "sparse":
-                        new_arc = Arc("sparse", token1.id, token2.id)
-                        new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
-                                                        give_features(token1.form, token1.lemma, token1.pos,
-                                                                      token2.form, token2.lemma, token2.pos, token2.rel)
-                                                        if feature in feat_map)]
-                    else:
-                        new_arc = Arc("full", token1.id, token2.id, token1.form, token2.form, token1.lemma,
-                                      token2.lemma, token1.pos, token2.pos, token2.rel)
+                    direction = give_direction(token1.id, token2.id)
+                    distance = give_distance(token1.id, token2.id, direction)
+
+                    new_arc = Arc("sparse", token1.id, token2.id)
+                    new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
+                                                    give_features(token1.form, token1.lemma, token1.pos, token2.form,
+                                                                  token2.lemma, token2.pos, token2.rel, direction,
+                                                                  distance) if feature in feat_map)]
                     dependents.append(new_arc)
                 if dependents:
                     self.heads[token1.id] = dependents
@@ -84,15 +82,20 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
             for token1 in tokens:
 
                 # add arcs from root to every node
+
+                direction = "left"
+                distance = give_distance(0, token1.id, direction)
+
                 if mode == "complete-sparse":
                     new_arc = Arc("sparse", 0, token1.id)
                 else:
                     new_arc = Arc("full", 0, token1.id, "__ROOT__", token1.form, "__ROOT__", token1.lemma, "__ROOT__",
                                   token1.pos, token1.rel)
+
                 new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
                                                 give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form,
-                                                              token1.lemma, token1.pos, token1.rel) if
-                                                feature in feat_map)]
+                                                              token1.lemma, token1.pos, token1.rel, direction, distance)
+                                                if feature in feat_map)]
                 for feature in new_arc.feat_vec:
                     new_arc.score += weight_vector[feature]
                 self.heads[0].append(new_arc)
@@ -100,15 +103,20 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                 # add every other arc
                 dependents = []
                 for token2 in (token2 for token2 in tokens if token2.id != token1.id):
+
+                    direction = give_direction(token1.id, token2.id)
+                    distance = give_distance(token1.id, token2.id, direction)
+
                     if mode == "complete-sparse":
                         new_arc = Arc("sparse", token1.id, token2.id)
                     else:
                         new_arc = Arc("full", token1.id, token2.id, token1.form, token2.form, token1.lemma,
                                       token2.lemma, token1.pos, token2.pos, token2.rel)
+
                     new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
                                                     give_features(token1.form, token1.lemma, token1.pos, token2.form,
-                                                                  token2.lemma, token2.pos, token2.rel) if
-                                                    feature in feat_map)]
+                                                                  token2.lemma, token2.pos, token2.rel, direction,
+                                                                  distance) if feature in feat_map)]
                     for feature in new_arc.feat_vec:
                         new_arc.score += weight_vector[feature]
                     dependents.append(new_arc)

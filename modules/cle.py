@@ -44,7 +44,8 @@ def chu_liu_edmonds(graph):
 
         # add arcs from inside cycle to outside cycle, then delete t_c
         if t_c in y:
-            for arc in (arc for arc in y[t_c] if arc.dependent not in c):
+            # for arc in (arc for arc in y[t_c] if arc.dependent not in c):
+            for arc in y[t_c]:
                 # dependents of t_c which are not in c
                 for head in (head for head in g if head == arc.former_head):
                     # heads in g_a which are former head of arc
@@ -73,7 +74,7 @@ def chu_liu_edmonds(graph):
         y[head_of_cycle] = new_dependents
 
         # add arcs from inside cycle to inside cycle except the one pointing to cycle_start_node
-        for head in (head for head in g_a if head in c):
+        for head in c:
             # every head in g_a that is in c
             for arc in (arc for arc in g_a[head] if arc.dependent in c and not arc.dependent == cycle_start_node):
                 # every dependent of head in g_a if it is in c but not cycle_start_node

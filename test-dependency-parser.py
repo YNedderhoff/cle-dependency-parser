@@ -1,6 +1,5 @@
 from modules.cle import chu_liu_edmonds
 from modules.graphs import ManualSparseGraph, Arc
-import profile
 
 a = ManualSparseGraph()
 a.add_arc(0, Arc("sparse", 0, 1, None, None, None, None, None, None, None, 10.0))
