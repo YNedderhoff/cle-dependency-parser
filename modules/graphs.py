@@ -56,10 +56,11 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                     distance = give_distance(0, token1.id, direction)
 
                     new_arc = Arc("sparse", 0, token1.id)
-                    new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
-                                                    give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form,
-                                                                  token1.lemma, token1.pos, token1.rel, direction,
-                                                                  distance) if feature in feat_map)]
+                    if feat_map is not None:
+                        new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
+                                                        give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form,
+                                                                      token1.lemma, token1.pos, token1.rel, direction,
+                                                                      distance) if feature in feat_map)]
                     self.heads[0].append(new_arc)
 
                 # add every other arc
@@ -69,10 +70,12 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                     distance = give_distance(token1.id, token2.id, direction)
 
                     new_arc = Arc("sparse", token1.id, token2.id)
-                    new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
-                                                    give_features(token1.form, token1.lemma, token1.pos, token2.form,
-                                                                  token2.lemma, token2.pos, token2.rel, direction,
-                                                                  distance) if feature in feat_map)]
+                    if feat_map is not None:
+                        new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
+                                                        give_features(token1.form, token1.lemma, token1.pos,
+                                                                      token2.form,
+                                                                      token2.lemma, token2.pos, token2.rel, direction,
+                                                                      distance) if feature in feat_map)]
                     dependents.append(new_arc)
                 if dependents:
                     self.heads[token1.id] = dependents
