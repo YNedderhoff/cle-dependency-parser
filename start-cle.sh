@@ -23,4 +23,4 @@ python -u dependency-parser.py -test -i $CORPORA/dev/wsj_dev_without_head.conll0
 python -u dependency-parser.py -ev -i predicted.conll06 -g $CORPORA/dev/wsj_dev.conll06 -o evaluation_sentence.txt
 
 #evaluate arc based
-#./eval07.pl -g $CORPORA/dev/wsj_dev.conll06 -s  predicted.conll06 >> evaluation.txt 2>&1
+./eval07.pl -g $CORPORA/dev/wsj_dev.conll06 -s  predicted.conll06 >> evaluation.txt 2>&1

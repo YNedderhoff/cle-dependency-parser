@@ -138,7 +138,6 @@ def give_surrounding_information(sentence, id1, id2):
     drpos = "__NULL__"
     dlform = "__NULL__"
     dlpos = "__NULL__"
-
     if id1 not in [0, 1, len(sentence)]:
         hrform = sentence[id1].form
         hrpos = sentence[id1].pos
@@ -178,16 +177,16 @@ def fm(infile):
     index = 0  # index in featmap
 
     for sentence in sentences(codecs.open(infile, encoding='utf-8')):
-
         for token1 in sentence:
             direction = "left"
             distance = give_distance(0, token1.id, direction)
-            hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos = "__NULL__"
+            hrform = hrpos = hlform = hlpos = drform = drpos = dlform = dlpos = "__NULL__"
 
             # add root features
             for feature in give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form, token1.lemma, token1.pos,
                                          hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos, direction,
                                          distance):
+                #print feature
                 if feature not in feat_map:
                     feat_map[feature] = index
                     index += 1
@@ -204,6 +203,7 @@ def fm(infile):
                 for feature in give_features(token1.form, token1.lemma, token1.pos, token2.form, token2.lemma,
                                              token2.pos, hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos,
                                              direction, distance):
+                    #print feature
                     if feature not in feat_map:
                         feat_map[feature] = index
                         index += 1

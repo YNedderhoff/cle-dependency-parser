@@ -52,7 +52,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                 if token1.head == 0:
                     direction = "left"
                     distance = give_distance(0, token1.id, direction)
-                    hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos = "__NULL__"
+                    hrform = hrpos = hlform = hlpos = drform = drpos = dlform = dlpos = "__NULL__"
                     new_arc = Arc("sparse", 0, token1.id)
                     if feat_map is not None:
                         new_arc.feat_vec = [f for f in (feat_map[feature] for feature in
@@ -91,7 +91,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
 
                 direction = "left"
                 distance = give_distance(0, token1.id, direction)
-                hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos = "__NULL__"
+                hrform = hrpos = hlform = hlpos = drform = drpos = dlform = dlpos = "__NULL__"
 
                 if mode == "complete-sparse":
                     new_arc = Arc("sparse", 0, token1.id)
