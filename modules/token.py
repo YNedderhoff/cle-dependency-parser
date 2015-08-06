@@ -14,7 +14,6 @@ class Token(object):
             self.head = None
         else:
             self.head = int(entries[6])
-        self.rel = entries[7].rstrip()
 
 
 def sentences(file_stream):
