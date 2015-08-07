@@ -23,18 +23,6 @@ class Arc:
             self.head_pos = head_pos
             self.dependent_pos = dependent_pos
 
-
-class ManualSparseGraph:  # heads has the same structure as in the other graph classes, but for addition of arcs
-    def __init__(self):
-        self.heads = {}
-
-    def add_arc(self, head, arc):
-        try:
-            self.heads[head].append(arc)
-        except KeyError:
-            self.heads[head] = [arc]
-
-
 class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc objects)
     def __init__(self, tokens, mode="sparse", feat_map=None, weight_vector=None):
 
