@@ -6,24 +6,24 @@ def give_features(hform, hlemma, hpos, dform, dlemma, dpos, hrform, hrpos, hlfor
                   direction, distance):
     # generator that yields features based on the following information:
 
-    # 1 = hform
-    # 2 = hpos
-    # 3 = dform
-    # 4 = dpos
-    # 5 = hlemma
-    # 6 = dlemma
+    # 1 = hform = form of the head
+    # 2 = hpos = pos of the head
+    # 3 = dform = form of the dependent
+    # 4 = dpos = pos of the dependent
+    # 5 = hlemma = lemma of the head
+    # 6 = dlemma = lemma of the dependent
 
-    # 7 = hrform
-    # 8 = hrpos
-    # 9 = hlform
-    # 10 = hlpos
-    # 11 = drform
-    # 12 = drpos
-    # 13 = dlform
-    # 14 = dlpos
-    
-    # 15 = direction
-    # 16 = distance
+    # 7 = hrform = form of the right neighbour of the head
+    # 8 = hrpos = pos of the right neighbour of the head
+    # 9 = hlform = form of the left neighbour of the head
+    # 10 = hlpos = pos of the left neighbour of the head
+    # 11 = drform = form of the right neighbour of the dependent
+    # 12 = drpos = pos of the right neighbour of the dependent
+    # 13 = dlform = form of the left neighbour of the dependent
+    # 14 = dlpos = pos of the left neighbour of the dependent
+
+    # 15 = direction = is the head right or left of the dependent in the sentence
+    # 16 = distance = the distance between head and dependent
 
     yield u'1,15,16:{0},{1},{2}'.format(hform, direction, distance)
     yield u'2,15,16:{0},{1},{2}'.format(hpos, direction, distance)
@@ -91,6 +91,9 @@ def give_features(hform, hlemma, hpos, dform, dlemma, dpos, hrform, hrpos, hlfor
 
 
 def give_distance(id1, id2, direction):
+
+    # returns the distance of head and dependent in the sentence as bucketed feature
+
     if direction == "right":
         d = id1 - id2
     else:
@@ -120,6 +123,9 @@ def give_distance(id1, id2, direction):
 
 
 def give_direction(id1, id2):
+
+    # returns the direction of the head (left or right from the dependent)
+
     if id2 < id1:
         direction = "right"
     else:
@@ -129,6 +135,9 @@ def give_direction(id1, id2):
 
 
 def give_surrounding_information(sentence, id1, id2):
+
+    # returns form and pos of the left and right neighbours of head and dependent
+
     hrform = "__NULL__"
     hrpos = "__NULL__"
     hlform = "__NULL__"
@@ -138,6 +147,7 @@ def give_surrounding_information(sentence, id1, id2):
     drpos = "__NULL__"
     dlform = "__NULL__"
     dlpos = "__NULL__"
+
     if id1 not in [0, 1, len(sentence)]:
         hrform = sentence[id1].form
         hrpos = sentence[id1].pos
@@ -178,6 +188,7 @@ def fm(infile):
 
     for sentence in sentences(codecs.open(infile, encoding='utf-8')):
         for token1 in sentence:
+
             direction = "left"
             distance = give_distance(0, token1.id, direction)
             hrform = hrpos = hlform = hlpos = drform = drpos = dlform = dlpos = "__NULL__"
@@ -186,7 +197,7 @@ def fm(infile):
             for feature in give_features("__ROOT__", "__ROOT__", "__ROOT__", token1.form, token1.lemma, token1.pos,
                                          hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos, direction,
                                          distance):
-                #print feature
+
                 if feature not in feat_map:
                     feat_map[feature] = index
                     index += 1
@@ -203,7 +214,7 @@ def fm(infile):
                 for feature in give_features(token1.form, token1.lemma, token1.pos, token2.form, token2.lemma,
                                              token2.pos, hrform, hrpos, hlform, hlpos, drform, drpos, dlform, dlpos,
                                              direction, distance):
-                    #print feature
+
                     if feature not in feat_map:
                         feat_map[feature] = index
                         index += 1

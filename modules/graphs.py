@@ -49,6 +49,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
             for token1 in tokens:
 
                 # add arc from root to it's dependent
+
                 if token1.head == 0:
                     direction = "left"
                     distance = give_distance(0, token1.id, direction)
@@ -63,6 +64,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                     self.heads[0].append(new_arc)
 
                 # add every other arc
+
                 dependents = []
                 for token2 in (token2 for token2 in tokens if token2.head == token1.id):
                     direction = give_direction(token1.id, token2.id)
@@ -109,6 +111,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                 self.heads[0].append(new_arc)
 
                 # add every other arc
+
                 dependents = []
                 for token2 in (token2 for token2 in tokens if token2.id != token1.id):
 
@@ -135,7 +138,7 @@ class Graph:  # sparse representation of a graph (keys: heads, values: SparseArc
                 if dependents:
                     self.heads[token1.id] = dependents
         else:
-            print "Unknown Graph mode"
+            print "Unknown Graph mode."
 
 
 def reverse_head_graph(graph):  # reverses a normal graph to a graph where the dependents are the keys
